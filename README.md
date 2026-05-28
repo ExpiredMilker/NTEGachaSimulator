@@ -178,7 +178,7 @@ elif in_branch or self.engine.in_branch:
 
 如有问题或建议，欢迎通过以下方式联系：
 - GitHub Issues
-- Email: tj@example.com
+- Bilibili: 过期牛奶rlgou
 
 ---
 
