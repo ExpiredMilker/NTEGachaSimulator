@@ -1,0 +1,37 @@
+# Python 编译缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 日志文件
+*.log
+bugs.txt
+
+# 打包产物与脚本
+build/
+dist/
+*.spec
+*.bat
+*.cmd
+
+# 数据文件（release 版本所有数据已硬编码到 Python 中）
+*.csv
+*.txt
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# IDE 配置
+.idea/
+.vscode/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 旧版发行目录和打包配置
+v0.5.1-release/
+GachaSimulator/

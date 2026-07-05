@@ -1,0 +1,43 @@
+#!/bin/sh
+# pre-commit hook for release-version
+# 确保 release 仓库只包含最小可运行的 Python 源码
+
+staged_files=$(git diff --cached --name-only)
+
+# 1. 禁止提交编译缓存和日志文件
+echo "$staged_files" | grep -E '^(__pycache__/|.*\.pyc$|.*\.pyo$|.*\.log$|bugs\.txt$)' >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "错误：不能提交 __pycache__、.pyc、.pyo、.log 或 bugs.txt"
+    exit 1
+fi
+
+# 2. 禁止提交打包产物和脚本
+echo "$staged_files" | grep -E '^(build/|dist/|.*\.spec$|.*\.bat$|.*\.cmd$)' >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "错误：不能提交 build/、dist/、.spec、.bat、.cmd"
+    exit 1
+fi
+
+# 3. 禁止提交数据文件（release 版本所有数据已硬编码）
+echo "$staged_files" | grep -E '^.*\.(csv|txt|png|jpg|jpeg|gif)$' >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "错误：release 仓库不能包含 csv/txt/png 等数据文件，所有数据应硬编码到 Python 中"
+    exit 1
+fi
+
+# 4. 检查 game_logic.py 中的 DEBUG_MODE 必须为 False
+if echo "$staged_files" | grep -q '^game_logic\.py$'; then
+    if git show :game_logic.py | grep -q '^DEBUG_MODE = True'; then
+        echo "错误：发布版本 game_logic.py 中 DEBUG_MODE 必须为 False"
+        exit 1
+    fi
+fi
+
+# 5. 只允许最小集合的文件进入 release 仓库
+echo "$staged_files" | grep -vE '^(README\.md|main\.py|game_logic\.py|board_data\.py|\.gitignore|git-hooks/pre-commit|boards/.*\.py)$' >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "错误：release 仓库只能包含 Python 源码、README.md、.gitignore 和钩子配置"
+    exit 1
+fi
+
+exit 0

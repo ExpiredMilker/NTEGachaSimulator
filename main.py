@@ -3,7 +3,7 @@
 """
 抽卡模拟器主程序 - GUI界面（Tkinter）
 包含动画棋盘、骰子滚动、棋子移动、落格高亮、获得弹窗、皮肤系统
-版本: v3.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
+版本: v1.0.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
 """
 
 import tkinter as tk
@@ -2084,6 +2084,80 @@ class AnimatedBoardCanvas:
             print(f"[警告] 更新皮肤标签页可见性失败: {e}")
 
 
+class RechargeDialog(tk.Toplevel):
+    """充值弹窗：选择套餐并支付人民币购买环石"""
+
+    def __init__(self, parent, app):
+        super().__init__(parent)
+        self.app = app
+        self.title("充值购买环石")
+        self.geometry("360x420")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.update_idletasks()
+        pw = parent.winfo_width()
+        ph = parent.winfo_height()
+        px = parent.winfo_rootx()
+        py = parent.winfo_rooty()
+        x = px + (pw - 360) // 2
+        y = py + (ph - 420) // 2
+        self.geometry(f"+{x}+{y}")
+
+        from board_data import get_all_recharge_packs
+
+        content = tk.Frame(self, bg="#FAFAFA")
+        content.pack(fill=tk.BOTH, expand=True, padx=16, pady=12)
+
+        tk.Label(content, text="选择充值套餐", font=("Microsoft YaHei", 13, "bold"),
+                 bg="#FAFAFA", fg="#333").pack(anchor=tk.W, pady=(0, 8))
+
+        dm = app.engine.state.dice_manager
+        total_label = tk.Label(content, text=f"累计充值: {dm.total_recharged_rmb:.2f} 元",
+                               font=("Microsoft YaHei", 10), bg="#FAFAFA", fg="#1976D2")
+        total_label.pack(anchor=tk.W, pady=(0, 10))
+
+        packs = get_all_recharge_packs()
+        if not packs:
+            tk.Label(content, text="未找到充值套餐配置\n请检查 充值信息.csv 文件",
+                     font=("Microsoft YaHei", 10), bg="#FAFAFA", fg="#999").pack(expand=True)
+            tk.Button(content, text="关闭", command=self.destroy, font=("Microsoft YaHei", 11),
+                      bg="#E0E0E0", relief=tk.FLAT, padx=20, pady=5).pack(pady=12)
+            return
+
+        container = tk.Frame(content, bg="#FAFAFA")
+        container.pack(fill=tk.BOTH, expand=True)
+
+        def do_recharge(pack):
+            rmb = pack["rmb_price"]
+            stones = pack["total_stones"]
+            if dm.recharge(rmb, stones):
+                app.total_rmb_var.set(f"{dm.total_recharged_rmb:.2f}")
+                app.ring_stone_var.set(str(dm.ring_stone))
+                app._refresh_all()
+                messagebox.showinfo("充值成功",
+                    f"支付 {rmb:.0f} 元\n获得 {stones} 环石\n当前环石: {dm.ring_stone}", parent=self)
+                self.destroy()
+            else:
+                messagebox.showerror("充值失败", "充值处理失败，请重试", parent=self)
+
+        for pack in packs:
+            # [V0.5.2修复] 按钮只显示基础充值数量，加赠单独标注在旁
+            text = f"{pack['rmb_price']:.0f}元  →  {pack['ring_stones']}环石"
+            if pack["bonus_stones"] > 0:
+                text += f"  (+{pack['bonus_stones']}环石)"
+
+            tk.Button(container, text=text, font=("Microsoft YaHei", 11),
+                      bg="#FFF", activebackground="#FFF3E0",
+                      relief=tk.RIDGE, bd=1, cursor="hand2",
+                      command=lambda p=pack: do_recharge(p)).pack(fill=tk.X, pady=4, ipady=6)
+
+        tk.Button(content, text="关闭", command=self.destroy,
+                  font=("Microsoft YaHei", 11), bg="#E0E0E0", relief=tk.FLAT,
+                  padx=20, pady=5).pack(pady=(12, 0))
+
+
 class RewardPopup(tk.Toplevel):
     """获得物品弹窗"""
 
@@ -2188,7 +2262,7 @@ class GachaSimulator:
         self.engine = GameEngine("limited_xun")
         print(f"[main.__init__] 初始引擎: gacha.board_type={self.engine.gacha.board_type}, gacha.board_id={self.engine.gacha.board_id}")
         self.root = tk.Tk()
-        self.root.title("异环抽卡模拟器")
+        self.root.title("异环抽卡模拟器 v1.0.0")
         self.root.geometry("1100x800")
         self.root.resizable(True, True)
 
@@ -2361,45 +2435,34 @@ class GachaSimulator:
         row2.pack(fill=tk.X, pady=1)
         tk.Label(row2, text="环石:", font=("Microsoft YaHei", 9),
                   width=5).pack(side=tk.LEFT)
-        self.ring_stone_var = tk.StringVar(value="无限")
-        tk.Label(row2, textvariable=self.ring_stone_var,
-                  font=("Microsoft YaHei", 9), fg="#E65100").pack(side=tk.LEFT)
+        self.ring_stone_var = tk.StringVar(value="0")
+        self.ring_stone_entry = tk.Entry(row2, textvariable=self.ring_stone_var,
+                                           width=9, font=("Microsoft YaHei", 9),
+                                           validate="key", validatecommand=vcmd)
+        self.ring_stone_entry.pack(side=tk.LEFT, padx=2)
         tk.Label(row2, text=" (160/骰)",
                   font=("Microsoft YaHei", 7), fg="#999").pack(side=tk.LEFT)
 
-        # ===== [新增] Phase 4: 氪金系统UI预留 =====
-        # 人民币余额显示（当前隐藏，Phase 4启用后显示）
+        # 累计充值金额显示 + 充值按钮
         self._rmb_frame = tk.Frame(f)
-        # 暂时不pack，等Phase 4启用时再显示
-        # self._rmb_frame.pack(fill=tk.X, pady=1)
-        
-        tk.Label(self._rmb_frame, text="人民币:", font=("Microsoft YaHei", 9),
-                  width=5).pack(side=tk.LEFT)
-        self.rmb_balance_var = tk.StringVar(value="0.00")
-        tk.Label(self._rmb_frame, textvariable=self.rmb_balance_var,
+        self._rmb_frame.pack(fill=tk.X, pady=1)
+
+        tk.Label(self._rmb_frame, text="累计充值:", font=("Microsoft YaHei", 9),
+                  width=7).pack(side=tk.LEFT)
+        self.total_rmb_var = tk.StringVar(value="0.00")
+        tk.Label(self._rmb_frame, textvariable=self.total_rmb_var,
                   font=("Microsoft YaHei", 9), fg="#1976D2").pack(side=tk.LEFT)
         tk.Label(self._rmb_frame, text=" 元",
                   font=("Microsoft YaHei", 9), fg="#1976D2").pack(side=tk.LEFT)
-        
-        # 充值按钮（当前禁用，Phase 4启用后激活）
+
+        # 充值按钮
         self.btn_recharge = ttk.Button(
             self._rmb_frame,
             text="充值",
             command=self._on_recharge_click,
-            state=tk.DISABLED,  # [关键] 当前禁用
             width=6
         )
         self.btn_recharge.pack(side=tk.RIGHT, padx=(5, 0))
-        
-        # 累计消费统计按钮（可选）
-        self.btn_stats = ttk.Button(
-            self._rmb_frame,
-            text="统计",
-            command=self._on_stats_click,
-            state=tk.DISABLED,  # [关键] 当前禁用
-            width=6
-        )
-        self.btn_stats.pack(side=tk.RIGHT)
 
         # [已注释] 测试骰子功能（调试完成后可删除此段）
         # row_test = tk.Frame(f)
@@ -2659,100 +2722,22 @@ class GachaSimulator:
                 self.board_canvas.canvas.delete("speed_label")
                 self.board_canvas._draw_speed_badge()
 
-    # ===== [新增] Phase 4: 氪金系统UI回调（预留）=====
-    
+    # ===== 氪金系统UI回调 =====
+
     def _on_recharge_click(self):
-        """
-        充值按钮点击事件处理
-        
-        [Phase 4 预留] 当前功能：
-        - 显示提示：氪金系统尚未开放
-        - 未来功能：打开充值弹窗，选择套餐并支付
-        """
-        messagebox.showinfo(
-            "功能开发中",
-            "\n氪金充值系统正在开发中...\n\n"
-            "即将支持：\n"
-            "• 人民币购买环石\n"
-            "• 多种充值套餐\n"
-            "• 首充额外奖励\n"
-            "• 充值历史记录\n"
-            "• 消费统计分析\n\n"
-            "敬请期待！"
-        )
-    
-    def _on_stats_click(self):
-        """
-        统计按钮点击事件处理
-        
-        [Phase 4 预留] 当前功能：
-        - 显示提示：统计功能尚未开放
-        - 未来功能：显示详细的消费统计报表
-        """
-        dm = getattr(self.engine, 'state', None)
-        if dm:
-            dm = dm.dice_manager
-            
-        if not dm or not hasattr(dm, 'get_recharge_statistics'):
-            messagebox.showinfo(
-                "功能开发中",
-                "\n消费统计系统正在开发中...\n\n"
-                "即将支持：\n"
-            )
-            return
-        
-        stats = dm.get_recharge_statistics()
-        
-        message = f"""
-===== 氪金消费统计 =====
-
-累计充值金额: {stats['total_rmb']} 元
-累计获得环石: {stats['total_ring_stones_from_recharge']}
-充值次数: {stats['recharge_count']} 次
-
-当前人民币余额: {stats['current_rmb_balance']} 元
-当前环石余额: {stats['current_ring_stone_balance']}
-累计消费环石: {stats['total_consumed_ring_stones']}
-
-======================
-"""
-        
-        messagebox.showinfo("消费统计", message)
+        """充值按钮点击事件处理 - 打开充值弹窗"""
+        RechargeDialog(self.root, self)
 
     def _enable_recharge_system(self):
-        """
-        [Phase 4 预留] 启用氪金系统UI
-        
-        当调用此方法时：
-        1. 显示人民币余额区域
-        2. 激活充值和统计按钮
-        3. 关闭环石无限模式（可选）
-        
-        使用场景：
-        - 管理员或配置文件启用氪金功能时调用
-        """
-        # 显示人民币余额框架
+        """启用氪金系统UI（充值按钮和累计充值显示）"""
         self._rmb_frame.pack(fill=tk.X, pady=1)
-        
-        # 激活按钮
         self.btn_recharge.config(state=tk.NORMAL)
-        self.btn_stats.config(state=tk.NORMAL)
-        
         print("[系统] 氪金系统已启用")
 
     def _disable_recharge_system(self):
-        """
-        [Phase 4 预留] 禁用氪金系统UI（回退到无限模式）
-        
-        与 _enable_recharge_system() 相反的操作
-        """
-        # 隐藏人民币余额框架
+        """禁用氪金系统UI"""
         self._rmb_frame.pack_forget()
-        
-        # 禁用按钮
         self.btn_recharge.config(state=tk.DISABLED)
-        self.btn_stats.config(state=tk.DISABLED)
-        
         print("[系统] 氪金系统已禁用")
 
     def _lock_roll_buttons(self):
@@ -2913,6 +2898,7 @@ class GachaSimulator:
             self._on_dice_setting_change()
 
             # [V0.4.1修复] 保存当前骰子数量（切换棋盘不应影响骰子）
+            # [V0.5.2修复] 同时保存累计充值/消费数据
             old_dm = self.engine.state.dice_manager
             saved_dice = {
                 "red": old_dm.red_dice,
@@ -2921,6 +2907,9 @@ class GachaSimulator:
                 "inf_red": old_dm.infinite_red,
                 "inf_blue": old_dm.infinite_blue,
                 "inf_ring": old_dm.infinite_ring,
+                "total_recharged_rmb": old_dm.total_recharged_rmb,
+                "total_consumed_ring_stones": old_dm.total_consumed_ring_stones,
+                "recharge_history": list(old_dm.recharge_history),
             }
             # [V0.4.1调试-已验证] print(f"[switch_board] 保存骰子: 红={saved_dice['red']}, 蓝={saved_dice['blue']}, "
             #       f"环石={saved_dice['ring']}, 无限红={saved_dice['inf_red']}, 无限蓝={saved_dice['inf_blue']}")
@@ -2931,6 +2920,7 @@ class GachaSimulator:
             self.board_canvas.engine = self.engine
 
             # [V0.4.1修复] 恢复骰子数量
+            # [V0.5.2修复] 同时恢复累计充值/消费数据
             new_dm = self.engine.state.dice_manager
             new_dm.red_dice = saved_dice["red"]
             new_dm.blue_dice = saved_dice["blue"]
@@ -2938,6 +2928,9 @@ class GachaSimulator:
             new_dm.infinite_red = saved_dice["inf_red"]
             new_dm.infinite_blue = saved_dice["inf_blue"]
             new_dm.infinite_ring = saved_dice["inf_ring"]
+            new_dm.total_recharged_rmb = saved_dice["total_recharged_rmb"]
+            new_dm.total_consumed_ring_stones = saved_dice["total_consumed_ring_stones"]
+            new_dm.recharge_history = saved_dice["recharge_history"]
 
             # [V0.4.1调试-已验证] 验证恢复结果
             # print(f"[switch_board] 恢复后验证: 红={new_dm.red_dice}, 蓝={new_dm.blue_dice}, "
@@ -2952,8 +2945,11 @@ class GachaSimulator:
             return True  # 允许清空
         return new_value.isdigit()  # 只允许0-9
 
-    def _on_dice_setting_change(self):
-        dm = self.engine.state.dice_manager
+    def _sync_dice_inputs_to_manager(self, dm=None):
+        """[V0.5.2新增] 将UI输入框中的骰子/环石数值同步到DiceManager"""
+        if dm is None:
+            dm = self.engine.state.dice_manager
+
         is_inf = self.red_inf_var.get()
         dm.infinite_red = is_inf
         if is_inf:
@@ -2966,7 +2962,6 @@ class GachaSimulator:
             except ValueError:
                 dm.red_dice = 0
 
-        # [V0.3新增] 蓝色骰子设置同步
         is_blue_inf = self.blue_inf_var.get()
         dm.infinite_blue = is_blue_inf
         if is_blue_inf:
@@ -2979,6 +2974,16 @@ class GachaSimulator:
             except ValueError:
                 dm.blue_dice = 0
 
+        # [V0.5新增] 环石输入同步（关闭无限模式，采用输入值）
+        dm.infinite_ring = False
+        try:
+            rv = int(self.ring_stone_var.get() or "0")
+            dm.ring_stone = max(0, rv)
+        except ValueError:
+            dm.ring_stone = 0
+
+    def _on_dice_setting_change(self):
+        self._sync_dice_inputs_to_manager()
         self._refresh_all()
 
     def _on_single_roll(self):
@@ -3024,34 +3029,8 @@ class GachaSimulator:
         # 常驻棋盘使用蓝色骰子，限定棋盘使用红色骰子
         dice_type_to_use = "blue" if board_type == "permanent" else "red"
 
-        # [V0.3-修复] 无论使用哪种骰子，都同步所有骰子类型的输入值
-        # 之前bug：限定棋盘（红骰）时不读取蓝骰输入，导致蓝骰显示为0
-        # [V0.4.3已移除] 骰子同步详细日志
-
-        if not dm.infinite_red or not dm.infinite_blue:
-            # 同步红骰数值
-            if not dm.infinite_red:
-                try:
-                    val = int(self.red_dice_var.get() or "0")
-                    dm.red_dice = max(0, val)
-                except ValueError:
-                    dm.red_dice = 0
-
-            # 同步蓝骰数值（始终读取，不限于常驻棋盘）
-            if not dm.infinite_blue:
-                try:
-                    val = int(self.blue_dice_var.get() or "0")
-                    dm.blue_dice = max(0, val)
-                except ValueError:
-                    dm.blue_dice = 0
-
-            # 同步环石数值
-            if not dm.infinite_ring:
-                try:
-                    rv = int(self.ring_stone_var.get() or "0")
-                    dm.ring_stone = max(0, rv)
-                except ValueError:
-                    dm.ring_stone = 0
+        # [V0.5.2] 统一同步输入框数值
+        self._sync_dice_inputs_to_manager(dm)
 
         success, consumed = dm.try_consume_for_roll(1, dice_type=dice_type_to_use)
         # [V0.4.3已移除] 骰子消耗日志
@@ -3380,6 +3359,36 @@ class GachaSimulator:
             print(f"[警告] _on_ten_roll: 检测到is_animating=True，强制重置")
             self.board_canvas.is_animating = False
 
+        # [V0.5.2] 十连前先判断资源是否够投满10次
+        dm = self.engine.state.dice_manager
+        current_board_id = getattr(self.board_canvas, 'current_board_id', 'limited_xun')
+        try:
+            import board_data
+            board_config = board_data.get_board_config(current_board_id)
+            board_type = board_config.get("board_type", "limited")
+        except Exception:
+            board_type = "limited"
+        dice_type_to_use = "blue" if board_type == "permanent" else "red"
+
+        # 同步输入框数值到 dice_manager
+        self._sync_dice_inputs_to_manager(dm)
+
+        dice_available = dm.get_dice_count(dice_type_to_use)
+        ring_available = dm.get_dice_count("ring")
+        if dice_available != float("inf") and ring_available != float("inf"):
+            total_available = int(dice_available) + int(ring_available)
+            if total_available < 10:
+                dice_name = "蓝骰" if dice_type_to_use == "blue" else "红骰"
+                messagebox.showwarning(
+                    "资源不足",
+                    f"当前资源不足以进行10连抽\n"
+                    f"{dice_name}可用: {int(dice_available)}抽\n"
+                    f"环石可用: {int(ring_available)}抽\n"
+                    f"共需: 10抽"
+                )
+                self._unlock_roll_buttons()
+                return
+
         # [调试-10连] 记录十连抽开始时的状态
         start_total_rolls = self.engine.state.total_rolls
         start_s_pity = self.engine.state.s_pity_counter
@@ -3436,52 +3445,16 @@ class GachaSimulator:
 
                 dm = self.engine.state.dice_manager
 
-                # [V0.3新增] 根据当前棋盘类型决定使用哪种骰子（与单次抽卡一致）
-                current_board_id = getattr(self.board_canvas, 'current_board_id', 'limited_xun')
-                try:
-                    import board_data
-                    board_config = board_data.get_board_config(current_board_id)
-                    board_type = board_config.get("board_type", "limited")
-                except Exception:
-                    board_type = "limited"
+                # [V0.5.2] 统一同步输入框数值
+                self._sync_dice_inputs_to_manager(dm)
 
-                dice_type_to_use = "blue" if board_type == "permanent" else "red"
+                success, consumed = dm.try_consume_for_roll(1, dice_type=dice_type_to_use)
+                if not success:
+                    dice_name = "蓝骰" if dice_type_to_use == "blue" else "红骰"
+                    messagebox.showwarning("提示", f"{dice_name}和环石都不足！已完成{idx}抽")
+                    return
 
-                # [V0.3-修复] 无论使用哪种骰子，都同步所有骰子类型的输入值
-                # 之前bug：限定棋盘（红骰）时不读取蓝骰输入，导致蓝骰显示为0
-
-                if not dm.infinite_red or not dm.infinite_blue:
-                    # 同步红骰数值
-                    if not dm.infinite_red:
-                        try:
-                            val = int(self.red_dice_var.get() or "0")
-                            dm.red_dice = max(0, val)
-                        except ValueError:
-                            dm.red_dice = 0
-
-                    # 同步蓝骰数值（始终读取，不限于常驻棋盘）
-                    if not dm.infinite_blue:
-                        try:
-                            val = int(self.blue_dice_var.get() or "0")
-                            dm.blue_dice = max(0, val)
-                        except ValueError:
-                            dm.blue_dice = 0
-
-                    # 同步环石数值
-                    if not dm.infinite_ring:
-                        try:
-                            rv = int(self.ring_stone_var.get() or "0")
-                            dm.ring_stone = max(0, rv)
-                        except ValueError:
-                            dm.ring_stone = 0
-
-                    success, consumed = dm.try_consume_for_roll(1, dice_type=dice_type_to_use)
-                    if not success:
-                        dice_name = "蓝骰" if dice_type_to_use == "blue" else "红骰"
-                        messagebox.showwarning("提示", f"{dice_name}和环石都不足！已完成{idx}抽")
-                        return
-
-                    self._refresh_all()
+                self._refresh_all()
 
                 global_pos = self.board_canvas.piece_pos_idx
                 current_main = self.board_canvas.get_main_path_idx(global_pos)
@@ -3700,6 +3673,16 @@ class GachaSimulator:
                         """[V0.4.3新增] 硬保底的after_one回调：不移动棋子"""
                         try:
                             self._display_result(result)
+
+                            # [V0.5.3修复] 硬保底后同步变格状态并重绘棋盘
+                            # 硬保底会重置垫刀并关闭变格，确保棋盘显示恢复基准状态
+                            if hasattr(self, 'board_canvas') and hasattr(self, 'engine'):
+                                old_variant = getattr(self.board_canvas, 'is_variant', False)
+                                self.board_canvas.is_variant = getattr(self.engine.state, 'is_variant', False)
+                                if old_variant != self.board_canvas.is_variant:
+                                    print(f"[变格-硬保底] is_variant: {old_variant} -> {self.board_canvas.is_variant}, 触发棋盘重绘")
+                                    self.board_canvas._render_full_board()
+
                             self._refresh_all()
                             self.root.after(50, lambda: run_n(idx + 1))
                         except Exception as e:
@@ -3775,6 +3758,16 @@ class GachaSimulator:
                         # else: 正常情况，位置已在animate_roll中正确设置
 
                         self._display_result(result)
+
+                        # [V0.5.3修复] 10连抽过程中同步变格状态并重绘棋盘
+                        # 确保第70抽触发变格后，后续投掷的棋盘显示实时更新
+                        if hasattr(self, 'board_canvas') and hasattr(self, 'engine'):
+                            old_variant = getattr(self.board_canvas, 'is_variant', False)
+                            self.board_canvas.is_variant = getattr(self.engine.state, 'is_variant', False)
+                            if old_variant != self.board_canvas.is_variant:
+                                print(f"[变格-10连抽] is_variant: {old_variant} -> {self.board_canvas.is_variant}, 触发棋盘重绘")
+                                self.board_canvas._render_full_board()
+
                         self._refresh_all()
                         self.root.after(50, lambda: run_n(idx + 1))
                     except Exception as e:
@@ -3784,6 +3777,15 @@ class GachaSimulator:
                         # 尝试继续下一次投掷
                         try:
                             self._display_result(result)
+
+                            # [V0.5.3修复] 异常恢复路径也同步变格状态并重绘棋盘
+                            if hasattr(self, 'board_canvas') and hasattr(self, 'engine'):
+                                old_variant = getattr(self.board_canvas, 'is_variant', False)
+                                self.board_canvas.is_variant = getattr(self.engine.state, 'is_variant', False)
+                                if old_variant != self.board_canvas.is_variant:
+                                    print(f"[变格-10连抽-恢复] is_variant: {old_variant} -> {self.board_canvas.is_variant}, 触发棋盘重绘")
+                                    self.board_canvas._render_full_board()
+
                             self._refresh_all()
                             self.root.after(100, lambda: run_n(idx + 1))
                         except Exception as e2:
@@ -4605,6 +4607,10 @@ class GachaSimulator:
         md = "变格" if s.is_variant else "基准"
         self.lbl_mode.config(text=f"当前: {md}棋盘")
 
+        # [V0.5.3修复] 同步变格状态到棋盘画布，确保十连抽过程中棋盘显示实时更新
+        if hasattr(self, 'board_canvas') and self.board_canvas:
+            self.board_canvas.is_variant = s.is_variant
+
         dc = s.dice_manager.get_dice_count("red")
         if dc == float("inf"):
             self.red_inf_var.set(True)
@@ -4614,10 +4620,8 @@ class GachaSimulator:
             self.red_dice_entry.config(state=tk.NORMAL)
             self.red_dice_var.set(str(int(dc)))
 
-        self.ring_stone_var.set("无限")
-        rc = s.dice_manager.get_dice_count("ring")
-        if rc != float("inf"):
-            self.ring_stone_var.set(str(int(rc)))
+        # [V0.5.2修复] 直接显示环石原值，get_dice_count("ring") 已换算为可用抽数
+        self.ring_stone_var.set(str(int(s.dice_manager.ring_stone)))
 
         # [V0.3新增] 蓝色骰子显示同步
         bc = s.dice_manager.get_dice_count("blue")
@@ -4629,10 +4633,9 @@ class GachaSimulator:
             self.blue_dice_entry.config(state=tk.NORMAL)
             self.blue_dice_var.set(str(int(bc)))
 
-        # [新增] 更新人民币余额显示（Phase 4 预留）
-        if hasattr(self, 'rmb_balance_var') and hasattr(s.dice_manager, 'rmb_balance'):
-            rmb_balance = s.dice_manager.rmb_balance
-            self.rmb_balance_var.set(f"{rmb_balance:.2f}")
+        # [V0.5] 更新累计充值金额显示
+        if hasattr(self, 'total_rmb_var') and hasattr(s.dice_manager, 'total_recharged_rmb'):
+            self.total_rmb_var.set(f"{s.dice_manager.total_recharged_rmb:.2f}")
 
         self.lbl_gold_chips.config(text=f"金棋: {s.gold_chips}")
         self.lbl_white_chips.config(text=f"白棋: {s.white_chips}")

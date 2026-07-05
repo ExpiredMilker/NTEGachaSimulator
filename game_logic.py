@@ -65,10 +65,7 @@ class DiceManager:
         self.infinite_blue = True   # [V0.3修复] 常驻棋盘默认无限蓝骰
         self.infinite_ring = True  # [关键] 关闭后启用真实消耗模式
         
-        # ===== [新增] 氪金系统字段（Phase 4 预留）=====
-        # 人民币余额（模拟充值）
-        self.rmb_balance = 0.0
-        
+        # ===== 氪金系统字段 =====
         # 累计充值金额（用于统计）
         self.total_recharged_rmb = 0.0
         
@@ -86,7 +83,8 @@ class DiceManager:
         elif dice_type == "blue":
             return self.blue_dice if not self.infinite_blue else float("inf")
         elif dice_type == "ring":
-            return self.ring_stone if not self.infinite_ring else float("inf")
+            # 环石按 160:1 换算为可用抽数
+            return self.ring_stone // 160 if not self.infinite_ring else float("inf")
         return 0
 
     def consume_dice(self, count, dice_type="red"):
@@ -108,8 +106,10 @@ class DiceManager:
         elif dice_type == "ring":
             if self.infinite_ring:
                 return True
-            if self.ring_stone >= count:
-                self.ring_stone -= count
+            # 环石按 160:1 换算为骰子消耗
+            stone_cost = count * 160
+            if self.ring_stone >= stone_cost:
+                self.ring_stone -= stone_cost
                 return True
             return False
         return False
@@ -135,7 +135,8 @@ class DiceManager:
             return True
 
         if dice_type == "red" and not self.infinite_ring:
-            ring_count = self.ring_stone if not self.infinite_ring else float("inf")
+            # 环石按 160:1 换算为可用抽数
+            ring_count = self.ring_stone // 160 if not self.infinite_ring else float("inf")
             if ring_count >= needed:
                 return True
 
@@ -168,10 +169,11 @@ class DiceManager:
                 print(f"[try_consume] 结果: 消耗红骰成功, 剩余={self.red_dice}")
                 return True, "red"
 
-        # 最后尝试环石（统一备用资源）
+        # 最后尝试环石（统一备用资源，160环石=1抽）
         if self.consume_dice(count, "ring"):
             if not self.infinite_ring:
-                self.total_consumed_ring_stones += count
+                # 累计消耗环石数（实际扣除的环石）
+                self.total_consumed_ring_stones += count * 160
             print(f"[try_consume] 结果: 消耗环石成功")
             return True, "ring"
 
@@ -203,18 +205,10 @@ class DiceManager:
             print(f"[错误] 充值金额必须大于0: RMB={rmb_amount}, 环石={ring_stones_received}")
             return False
         
-        # 检查人民币余额是否足够（模拟真实支付）
-        if rmb_amount > self.rmb_balance:
-            print(f"[错误] 人民币余额不足: 需要{rmb_amount}元，当前{self.rmb_balance}元")
-            return False
-        
-        # 扣除人民币
-        self.rmb_balance -= rmb_amount
-        
         # 增加环石
         self.ring_stone += ring_stones_received
         
-        # 更新统计
+        # 更新累计充值金额
         self.total_recharged_rmb += rmb_amount
         
         # 记录充值历史
@@ -230,24 +224,6 @@ class DiceManager:
         
         return True
     
-    def add_rmb_balance(self, amount):
-        """
-        增加人民币余额（模拟外部充值或奖励）
-        
-        参数:
-            amount: 增加的人民币数量（可以是负数，表示退款）
-        
-        使用场景：
-            - 管理员赠送测试资金
-            - 退款操作
-            - 活动奖励
-        """
-        self.rmb_balance += amount
-        if amount > 0:
-            print(f"[增加余额] +{amount}元，当前余额:{self.rmb_balance}元")
-        else:
-            print(f"[扣除余额] {amount}元，当前余额:{self.rmb_balance}元")
-    
     def get_recharge_statistics(self):
         """
         获取充值统计数据
@@ -257,7 +233,6 @@ class DiceManager:
             - total_rmb: 累计充值金额（元）
             - total_ring_stones_from_recharge: 通过充值获得的环石总数
             - recharge_count: 充值次数
-            - current_rmb_balance: 当前人民币余额
             - current_ring_stone_balance: 当前环石余额
             - total_consumed_ring_stones: 累计消费环石数
         
@@ -272,7 +247,6 @@ class DiceManager:
             "total_rmb": round(self.total_recharged_rmb, 2),
             "total_ring_stones_from_recharge": total_ring_from_recharge,
             "recharge_count": len(self.recharge_history),
-            "current_rmb_balance": round(self.rmb_balance, 2),
             "current_ring_stone_balance": self.ring_stone,
             "total_consumed_ring_stones": self.total_consumed_ring_stones,
         }
@@ -299,7 +273,7 @@ class DiceManager:
             >>> if not result["can_afford"]:
             ...     print(f"还需要充值 {result['rmb_needed_to_recharge']} 元")
         """
-        # 计算可用资源
+        # 计算可用资源（红骰优先，环石按 160:1 折算为抽数）
         available_dice = self.get_dice_count("red")
         if available_dice == float("inf"):
             available_dice = 999999  # 无限模式视为很多
@@ -310,21 +284,21 @@ class DiceManager:
         # 计算需要的环石
         ring_stone_needed = remaining_rolls * price_per_roll
         
-        # 检查环石是否足够
+        # 检查环石是否足够（get_dice_count("ring") 已返回可用抽数，需再乘 160 得到环石数）
         current_ring = self.get_dice_count("ring")
         if current_ring == float("inf"):
             can_afford = True
             shortfall_reason = ""
-        elif current_ring >= ring_stone_needed:
+        elif current_ring * 160 >= ring_stone_needed:
             can_afford = True
             shortfall_reason = ""
         else:
             can_afford = False
-            shortfall = ring_stone_needed - current_ring
-            shortfall_reason = f"环石不足：需要{ring_stone_needed}，当前有{current_ring}"
+            shortfall = ring_stone_needed - current_ring * 160
+            shortfall_reason = f"环石不足：需要{ring_stone_needed}，当前有{current_ring * 160}"
             
-            # [新增] 估算需要充值多少钱（假设1元=10环石的汇率）
-            estimated_rmb_needed = shortfall / 10.0  # 这个比例应该从配置读取
+            # 估算需要充值多少钱（按充值信息.csv 默认 1元=10环石）
+            estimated_rmb_needed = shortfall / 10.0
             
             return {
                 "can_afford": False,
@@ -386,11 +360,17 @@ class GameState:
 
     def increment_s_pity(self):
         """增加S级保底计数，检查是否触发变格"""
-        self.s_pity_counter += 1
         pity_cfg = PITY_CONFIG["s_pity"]
-        if self.s_pity_counter >= pity_cfg["variant_threshold"] and not self.is_variant:
+
+        # [V0.5.3修复] 变格预触发：第70次投掷时就启用变格效果
+        # 原逻辑是第70次投掷后才设置 is_variant，导致第70次本身不变格
+        # 现在改为：如果本次增加后达到阈值，则立即启用变格
+        if self.s_pity_counter + 1 >= pity_cfg["variant_threshold"] and not self.is_variant:
+            self.s_pity_counter += 1
             self.is_variant = True
             return "variant"
+
+        self.s_pity_counter += 1
         if self.s_pity_counter >= pity_cfg["hard_pity"]:
             return "hard_pity"
         return None
@@ -969,6 +949,12 @@ class GameEngine:
 
         self.state.total_rolls += 1
 
+        # [V0.5.3修复] S级保底计数必须在格子结算前更新，确保第70次投掷时
+        # 变格状态已生效，从而正确应用变格格子变换（之前是结算后才计数，
+        # 导致第70抽本身不变格）
+        pity_event = self.state.increment_s_pity()
+        result["pity_event"] = pity_event
+
         # [V0.3-已注释] 终极调试-total_rolls+1日志（需要时可取消）
         print(f"[终极调试-total_rolls+1] [{_time.time():.3f}] total_rolls={self.state.total_rolls}")
 
@@ -1171,13 +1157,6 @@ class GameEngine:
         # print(f"[终极调试-奖励后] 奖励数={len(rewards)}, 有S级={has_s_in_rewards_final}, s_pity={self.state.s_pity_counter}")
         # print(f"[调试-保底] increment_s_pity前: total_rolls={self.state.total_rolls}, s_pity_counter={self.state.s_pity_counter}")
         # _write_debug_log(f"[{_time.time():.3f}] [步骤5-increment_s_pity前] roll={result['roll_number']} s_pity={self.state.s_pity_counter}")
-
-        # [修复] 总是执行increment_s_pity()确保计数正确
-        pity_event = self.state.increment_s_pity()
-        result["pity_event"] = pity_event
-
-        # # [文件日志-步骤6]
-        # _write_debug_log(f"[{_time.time():.3f}] [步骤6-increment_s_pity后] roll={result['roll_number']} s_pity={self.state.s_pity_counter} event={pity_event}")
 
         # [修复] 检查是否需要重置保底（如果获得了S级角色）
         has_s_in_rewards = any(r.get("type") == "s_character" for r in rewards)
@@ -1973,26 +1952,7 @@ class GameEngine:
         """
         # [V0.3-版本标记] 确认加载的是最新代码
         print(f"\n[同行-版本] === V0.3-FIX3 已加载 (排除特殊标记) ===")
-        
-        # [V0.3-诊断-文件] 写入诊断日志
-        try:
-            with open("_companion_debug.log", "a", encoding="utf-8") as f:
-                f.write(f"[{__import__('time').time():.3f}] _resolve_companion_darkbox调用\n")
-                f.write(f"  cell_name={repr(cell_name)}\n")
-                f.write(f"  type(cell_name)={type(cell_name).__name__}\n")
-                if cell_name:
-                    f.write(f"  contains '随机A级': {'随机A级' in str(cell_name)}\n")
-                    f.write(f"  contains '随机S级': {'随机S级' in str(cell_name)}\n")
-                    f.write(f"  contains '同行': {'同行' in str(cell_name)}\n")
-                f.write(f"  hasattr(s_pool)={hasattr(self.gacha, 's_pool')}\n")
-                if hasattr(self.gacha, 's_pool') and self.gacha.s_pool:
-                    f.write(f"  s_pool={[c['name'] for c in self.gacha.s_pool]}\n")
-                f.write(f"  hasattr(a_pool)={hasattr(self.gacha, 'a_pool')}\n")
-                if hasattr(self.gacha, 'a_pool') and self.gacha.a_pool:
-                    f.write(f"  a_pool={[c['name'] for c in self.gacha.a_pool]}\n")
-                f.write("-" * 50 + "\n")
-        except Exception as e:
-            print(f"[诊断-文件写入失败] {e}")
+
         # [修复] 动态生成同行角色映射表，基于当前棋盘的companions_list
         # [V0.3-关键修复] 排除特殊标记(__RANDOM_S__/__)，让它们走随机抽取逻辑
         if hasattr(self.gacha, 'companions_list') and self.gacha.companions_list:

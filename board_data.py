@@ -81,6 +81,7 @@ class CharIds:
     S_XUN = "xun"
     S_REQUIEM = "requiem"
     S_CAERUS = "caerus"       # 卡厄斯
+    S_ZHENHONG = "zhenhong"   # 真红
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -118,6 +119,11 @@ CHARACTER_DB = {
     },
     CharIds.S_CAERUS: {
         "name": "卡厄斯",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_ZHENHONG: {
+        "name": "真红",
         "rarity": "S",
         "type": "limited",
     },
@@ -444,7 +450,7 @@ BOARDS_REGISTRY = {
     # 新增棋盘步骤：1.添加角色 2.添加配置 3.实现布局函数 4.UI自动识别
 
     # ============================================================
-    # 限定棋盘1：浔
+    # 限定棋盘0：浔（默认棋盘）
     # ============================================================
     "limited_xun": {
         "display_name": "限定棋盘（浔）",
@@ -567,6 +573,49 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘卡厄斯地图手动统计.csv",
             "rules_txt": "限定棋盘卡厄斯规则说明.txt",
             "details_txt": "限定棋盘卡厄斯详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘4：真红（最新限定）
+    # 基于安魂曲棋盘复制，仅替换S级角色名
+    # ============================================================
+    "limited_zhenhong": {
+        "display_name": "限定棋盘（真红）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_ZHENHONG,
+
+        # 于此同行角色映射（复用安魂曲的A级角色分配）
+        "companions_id_map": {
+            1: CharIds.A_ADELE,              # 主路径第1格 → 阿德勒
+            10: CharIds.A_AIDEJIA,           # 主路径第10格 → 埃德嘉
+            29: CharIds.A_BOHE,              # 主路径第29格 → 薄荷
+            37: CharIds.A_BOHE,              # 主路径第37格 → 薄荷
+            "B1-0": CharIds.S_ZHENHONG,      # 分支1第0格（S级角色）→ 真红
+        },
+
+        # A级角色池（复用安魂曲）
+        "a_pool_main_ids": [
+            CharIds.A_BOHE,                  # 薄荷（主池）
+            CharIds.A_AIDEJIA,               # 埃德嘉（主池）
+            CharIds.A_ADELE,                 # 阿德勒（主池）
+        ],
+        "a_pool_gift_only_ids": [
+            CharIds.A_YI,                    # 翳（仅赠礼）
+            CharIds.A_HANIYA,                # 哈尼娅（仅赠礼）
+            CharIds.A_HAIYUE,                # 海月（仅赠礼）
+        ],
+
+        # 坐标布局（复用安魂曲布局，仅替换S级角色名）
+        "layout_func": "get_zhenhong_board_layout",
+
+        # 文件映射（复用安魂曲文件，布局已硬编码）
+        "files": {
+            "csv": "限定棋盘安魂曲地图手动统计.csv",
+            "rules_txt": "限定棋盘安魂曲规则说明.txt",
+            "details_txt": "限定棋盘安魂曲详情.txt",
         },
     },
 
@@ -1184,6 +1233,105 @@ def get_limited_board_layout():
         (1, 1, "勇者宝箱", 7),               # → 右
         (1, 2, "勇者宝箱", 8),               # → 右（到达顶部右边缘）
         (2, 2, "勇者宝箱", 9),               # ↓ 下（出口）
+    ]
+
+    return {
+        "main_path": MAIN_PATH_LAYOUT,
+        "branch1": BRANCH1_LAYOUT,
+        "branch2": BRANCH2_LAYOUT,
+    }
+
+
+def get_zhenhong_board_layout():
+    """
+    获取限定棋盘（真红）的完整布局数据
+
+    基于安魂曲棋盘复制，坐标完全相同，仅S级角色名替换为真红
+    """
+    MAIN_PATH_LAYOUT = [
+        (5, 10, "起点", 0),
+        (5, 11, "于此同行（阿德勒）", 1),
+        (5, 12, "学徒宝箱", 2),
+        (5, 13, "风向标", 3),
+        (5, 14, "学徒宝箱", 4),
+        (4, 14, "学徒宝箱", 5),
+        (3, 14, "勇者宝箱", 6),
+        (2, 14, "学徒宝箱", 7),
+        (2, 15, "学徒宝箱", 8),
+        (2, 16, "迷迭棋盒（30个白色棋子）", 9),
+        (2, 17, "于此同行（埃德嘉）", 10),
+        (3, 17, "学徒宝箱", 11),
+        (4, 17, "勇者宝箱", 12),
+        (5, 17, "学徒宝箱", 13),
+        (5, 18, "学徒宝箱", 14),
+        (5, 19, "迷迭棋盒（50个白色棋子）", 15),
+        (6, 19, "学徒宝箱", 16),
+        (7, 19, "于此同行（埃德嘉）", 17),
+        (8, 19, "勇者宝箱", 18),
+        (9, 19, "学徒宝箱", 19),
+        (10, 19, "学徒宝箱", 20),
+        (11, 19, "迷迭棋盒（30个白色棋子）", 21),
+        (11, 18, "弧光盲盒+沉眠池", 22),
+        (11, 17, "学徒宝箱", 23),
+        (11, 16, "勇者宝箱", 24),
+        (11, 15, "学徒宝箱", 25),
+        (11, 14, "学徒宝箱", 26),
+        (10, 14, "迷迭棋盒（50个白色棋子）", 27),
+        (10, 13, "学徒宝箱", 28),
+        (10, 12, "于此同行（薄荷）", 29),
+        (10, 11, "勇者宝箱", 30),
+        (10, 10, "学徒宝箱", 31),
+        (10, 9, "学徒宝箱", 32),
+        (10, 8, "迷迭棋盒（30个白色棋子）", 33),
+        (9, 8, "学徒宝箱", 34),
+        (9, 7, "学徒宝箱", 35),
+        (9, 6, "勇者宝箱", 36),
+        (9, 5, "于此同行（薄荷）", 37),
+        (9, 4, "学徒宝箱", 38),
+        (8, 4, "迷迭棋盒（30个白色棋子）", 39),
+        (7, 4, "学徒宝箱", 40),
+        (6, 4, "迷迭棋盒（50个白色棋子）", 41),
+        (5, 4, "勇者宝箱", 42),
+        (4, 4, "学徒宝箱", 43),
+        (3, 4, "于此同行（阿德勒）", 44),
+        (2, 4, "迷迭棋盒（30个白色棋子）", 45),
+        (2, 5, "学徒宝箱", 46),
+        (2, 6, "学徒宝箱", 47),
+        (2, 7, "勇者宝箱", 48),
+        (2, 8, "再来一次+沉眠池", 49),
+        (2, 9, "学徒宝箱", 50),
+        (2, 10, "弧光盲盒", 51),
+        (2, 11, "迷迭棋盒（30个白色棋子）", 52),
+        (3, 11, "学徒宝箱", 53),
+        (4, 11, "勇者宝箱", 54),
+    ]
+
+    # 分支1：S级角色区（右侧，含改装时刻、于此同行S级等）
+    # [V0.3修复] 行走方向：从(6,21)入口向右→下→左（蛇形路径）
+    BRANCH1_LAYOUT = [
+        (6, 21, "于此同行（真红）", 1),       # 入口（靠近主路径16号格子）
+        (6, 22, "改装时刻·涂装", 2),          # → 右
+        (6, 23, "勇者宝箱", 3),               # → 右
+        (6, 24, "学徒宝箱", 4),               # → 右（到达右边缘）
+        (7, 24, "勇者宝箱", 5),               # ↓ 下
+        (8, 24, "学徒宝箱", 6),               # ↓ 下（到达底部）
+        (8, 23, "勇者宝箱", 7),               # ← 左
+        (8, 22, "学徒宝箱", 8),               # ← 左
+        (8, 21, "勇者宝箱", 9),               # ← 左（出口）
+    ]
+
+    # 分支2：皮肤惊喜区（左上角，含今日穿搭、多重惊喜等）
+    # [V0.3修复] 行走方向：从(4,2)入口向左→上→右→下（蛇形路径）
+    BRANCH2_LAYOUT = [
+        (4, 2, "勇者宝箱", 1),                # 入口（靠近主路径43号格子）
+        (4, 1, "今日穿搭", 2),                 # ← 左
+        (4, 0, "多重惊喜", 3),                 # ← 左（到达左边缘）
+        (3, 0, "勇者宝箱", 4),                 # ↑ 上
+        (2, 0, "勇者宝箱", 5),                 # ↑ 上
+        (1, 0, "勇者宝箱", 6),                 # ↑ 上（到达顶部左边缘）
+        (1, 1, "勇者宝箱", 7),                 # → 右
+        (1, 2, "勇者宝箱", 8),                 # → 右（到达顶部右边缘）
+        (2, 2, "勇者宝箱", 9),                 # ↓ 下（出口）
     ]
 
     return {
@@ -2055,111 +2203,67 @@ B_DISK_POOL = LIMITED_BOARD_TEMPLATE["b_disk_pool"]
 # [新增] Phase 4: 氪金系统配置（预留）
 # ============================================================
 
-RECHARGE_PACKS = {
-    """
-    充值套餐配置 - 人民币购买环石
-    
-    数据结构说明：
-    - key: 套餐ID（如 "pack_6", "pack_30"）
-    - value: dict {
-        "rmb_price": 人民币价格（元）,
-        "ring_stones": 获得的环石数量,
-        "bonus_stones": 额外赠送环石数量（0表示无赠送）,
-        "total_stones": 实际获得总数 = ring_stones + bonus_stones,
-        "name": 套餐显示名称,
-        "description": 套餐描述（用于UI提示）,
-        "is_recommended": 是否推荐（True时在UI中高亮）,
-        "first_time_bonus": 首充额外奖励（可选）,
+def _build_recharge_pack(rmb, base, bonus=0):
+    """根据原始数据构建充值套餐字典"""
+    return {
+        "rmb_price": float(rmb),
+        "ring_stones": int(base),
+        "bonus_stones": int(bonus),
+        "total_stones": int(base) + int(bonus),
+        "name": f"{int(rmb)}元充值",
+        "description": f"获得{int(base)}环石" + (f"，加赠{int(bonus)}环石" if bonus else ""),
+        "is_recommended": bonus > 0,
+        "first_time_bonus": 0,
     }
-    
-    使用示例：
-        >>> pack = RECHARGE_PACKS["pack_6"]
-        >>> print(f"{pack['name']}: {pack['rmb_price']}元 -> {pack['total_stones']}环石")
-    
-    注意：
-    - 价格和数量需要根据官方实际数据填写
-    - 当前为示例数据，待官方公布后更新
-    - bonus_stones 用于促销活动或首充奖励
-    """
-    
-    # ===== 基础套餐 =====
-    "pack_1": {
-        "rmb_price": 1.0,
-        "ring_stones": 10,
-        "bonus_stones": 0,
-        "total_stones": 10,
-        "name": "新手礼包",
-        "description": "适合初次体验",
-        "is_recommended": False,
-        "first_time_bonus": 5,  # 首充额外送5环石
-    },
-    
-    "pack_6": {
-        "rmb_price": 6.0,
-        "ring_stones": 60,
-        "bonus_stones": 0,
-        "total_stones": 60,
-        "name": "标准充值",
-        "description": "性价比较高的选择",
-        "is_recommended": True,  # 推荐套餐
-        "first_time_bonus": 10,  # 首充额外送10环石
-    },
-    
-    "pack_30": {
-        "rmb_price": 30.0,
-        "ring_stones": 300,
-        "bonus_stones": 30,  # 送30环石
-        "total_stones": 330,
-        "name": "超值礼包",
-        "description": "额外赠送10%环石",
-        "is_recommended": True,
-        "first_time_bonus": 50,  # 首充额外送50环石
-    },
-    
-    "pack_68": {
-        "rmb_price": 68.0,
-        "ring_stones": 680,
-        "bonus_stones": 100,  # 送100环石
-        "total_stones": 780,
-        "name": "豪华礼包",
-        "description": "额外赠送约15%环石",
-        "is_recommended": False,
-        "first_time_bonus": 120,
-    },
-    
-    "pack_128": {
-        "rmb_price": 128.0,
-        "ring_stones": 1280,
-        "bonus_stones": 220,  # 送220环石
-        "total_stones": 1500,
-        "name": "至尊礼包",
-        "description": "额外赠送约17%环石，最划算！",
-        "is_recommended": True,
-        "first_time_bonus": 280,
-    },
-    
-    "pack_328": {
-        "rmb_price": 328.0,
-        "ring_stones": 3280,
-        "bonus_stones": 650,  # 送650环石
-        "total_stones": 3930,
-        "name": "钻石礼包",
-        "description": "额外赠送约20%环石，土豪专属",
-        "is_recommended": False,
-        "first_time_bonus": 700,
-    },
-    
-    "pack_648": {
-        "rmb_price": 648.0,
-        "ring_stones": 6480,
-        "bonus_stones": 1500,  # 送1500环石
-        "total_stones": 7980,
-        "name": "传说礼包",
-        "description": "额外赠送约23%环石，最强性价比！",
-        "is_recommended": True,
-        "first_time_bonus": 1600,
-    },
+
+
+# [V0.5.2] 内置默认充值套餐，保证打包成单文件exe后仍可正常运行
+DEFAULT_RECHARGE_PACKS = {
+    "pack_6": _build_recharge_pack(6, 60),
+    "pack_30": _build_recharge_pack(30, 300, 30),
+    "pack_98": _build_recharge_pack(98, 980, 110),
+    "pack_198": _build_recharge_pack(198, 1980, 260),
+    "pack_328": _build_recharge_pack(328, 3280, 600),
+    "pack_648": _build_recharge_pack(648, 6480, 1600),
 }
+
+
+def _load_recharge_packs_from_csv():
+    """
+    从充值信息.csv读取充值套餐配置
+
+    CSV格式：人民币价格,购买环石,加赠
+    返回：dict {pack_id: {...}, ...}
+
+    [V0.5.2] 若CSV不存在或读取失败，返回内置默认套餐，
+    确保打包为单文件exe后无需依赖外部CSV文件。
+    """
+    import csv
+    csv_path = get_resource_path("充值信息.csv")
+    if not os.path.exists(csv_path):
+        return dict(DEFAULT_RECHARGE_PACKS)
+
+    packs = {}
+    try:
+        with open(csv_path, "r", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                try:
+                    rmb = float(row["人民币价格"])
+                    base = int(row["购买环石"])
+                    bonus = int(row["加赠"]) if row.get("加赠", "").strip() else 0
+                    pack_id = f"pack_{int(rmb)}"
+                    packs[pack_id] = _build_recharge_pack(rmb, base, bonus)
+                except (ValueError, KeyError):
+                    continue
+    except Exception:
+        pass
+
+    # CSV为空或读取失败时回退到内置默认套餐
+    return packs if packs else dict(DEFAULT_RECHARGE_PACKS)
+
+
+RECHARGE_PACKS = _load_recharge_packs_from_csv()
 
 # 充值汇率配置
 RECHARGE_EXCHANGE_RATE = {
