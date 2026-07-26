@@ -207,6 +207,13 @@ class LimitedCaeusBoard(BaseBoard):
             "B1-2": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # 分支3
             "B1-6": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # 分支7
             "B1-8": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # 分支9
+
+            # ===== 分支2勇者宝箱变（4个）→ 必定获得S级角色(100%) =====
+            # [V0.5.5修复] CSV中分支1/5/8/9明确为勇者宝箱变，分支7不变
+            "B2-0": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B2-4": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B2-6": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B2-8": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
         }
 
     # ============================================================

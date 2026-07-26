@@ -82,6 +82,7 @@ class CharIds:
     S_REQUIEM = "requiem"
     S_CAERUS = "caerus"       # 卡厄斯
     S_ZHENHONG = "zhenhong"   # 真红
+    S_IROI = "iroi"           # 伊洛伊
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -124,6 +125,11 @@ CHARACTER_DB = {
     },
     CharIds.S_ZHENHONG: {
         "name": "真红",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_IROI: {
+        "name": "伊洛伊",
         "rarity": "S",
         "type": "limited",
     },
@@ -397,6 +403,13 @@ VARIANT_TRANSFORMS = {
     "B1-4": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},  # 保留待验证
     "B1-6": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},  # CSV: 分支7=勇者宝箱变
     "B1-8": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "同行S级角色"},  # 用户确认63号应变格
+
+    # ===== 分支2勇者宝箱变（4个）→ 必定获得S级角色(100%) =====
+    # [V0.5.5修复] CSV中分支1/5/8/9明确为勇者宝箱变，分支7不变
+    "B2-0": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},
+    "B2-4": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},
+    "B2-6": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},
+    "B2-8": {"normal": "brave_chest",   "variant": "companion_s",     "variant_name": "勇者宝箱变"},
 }
 
 
@@ -616,6 +629,49 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘安魂曲地图手动统计.csv",
             "rules_txt": "限定棋盘安魂曲规则说明.txt",
             "details_txt": "限定棋盘安魂曲详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘5：伊洛伊
+    # 基于浔棋盘复制，仅替换S级角色名
+    # ============================================================
+    "limited_iroi": {
+        "display_name": "限定棋盘（伊洛伊）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_IROI,
+
+        # 于此同行角色映射（复用浔的A级角色分配）
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
+            10: CharIds.A_YI,                 # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_IROI,           # 分支1第0格（S级角色）→ 伊洛伊
+        },
+
+        # A级角色池（复用浔）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局（复用浔布局，仅替换S级角色名）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘伊洛伊地图手动统计.csv",
+            "rules_txt": "限定棋盘伊洛伊规则说明.txt",
+            "details_txt": "限定棋盘伊洛伊详情.txt",
         },
     },
 

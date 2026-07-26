@@ -56,10 +56,11 @@ class DiceManager:
 
     def __init__(self):
         # ===== 基础资源 =====
-        self.red_dice = 999999
+        # [V0.5.3修复] 红骰初始为0；无限模式下只表示不扣减，不代表实际持有数量
+        self.red_dice = 0
         self.blue_dice = 0
         self.ring_stone = 0
-        
+
         # ===== 无限模式开关（当前默认开启）=====
         self.infinite_red = True
         self.infinite_blue = True   # [V0.3修复] 常驻棋盘默认无限蓝骰
@@ -359,20 +360,17 @@ class GameState:
         return self.collection.get(item_type, {}).get(item_name, 0)
 
     def increment_s_pity(self):
-        """增加S级保底计数，检查是否触发变格"""
+        """增加S级保底计数，检查是否触发变格或硬保底"""
         pity_cfg = PITY_CONFIG["s_pity"]
 
-        # [V0.5.3修复] 变格预触发：第70次投掷时就启用变格效果
-        # 原逻辑是第70次投掷后才设置 is_variant，导致第70次本身不变格
-        # 现在改为：如果本次增加后达到阈值，则立即启用变格
-        if self.s_pity_counter + 1 >= pity_cfg["variant_threshold"] and not self.is_variant:
-            self.s_pity_counter += 1
-            self.is_variant = True
-            return "variant"
-
+        # [V0.5.5修复] 变格状态不再在本次投掷中立即生效，
+        # 而是等到本次结算后再启用，供下一次投掷使用。
+        # 这样第70抽本身仍按常规格子结算，第71抽起才应用变格格子变换。
         self.s_pity_counter += 1
         if self.s_pity_counter >= pity_cfg["hard_pity"]:
             return "hard_pity"
+        if self.s_pity_counter >= pity_cfg["variant_threshold"]:
+            return "variant"
         return None
 
     def reset_s_pity(self):
@@ -949,11 +947,15 @@ class GameEngine:
 
         self.state.total_rolls += 1
 
-        # [V0.5.3修复] S级保底计数必须在格子结算前更新，确保第70次投掷时
-        # 变格状态已生效，从而正确应用变格格子变换（之前是结算后才计数，
-        # 导致第70抽本身不变格）
+        # [V0.5.5修复] S级保底计数在格子结算前更新，但变格状态不立即生效。
+        # 第70抽仍按当前变格状态（通常为False）结算，结算后再启用变格；
+        # 第71抽起 is_variant 为 True，才应用变格格子变换。
         pity_event = self.state.increment_s_pity()
         result["pity_event"] = pity_event
+
+        # [V0.5.4/V0.5.5修复] 记录本次投掷实际使用的变格状态（结算前的状态），
+        # 供UI在动画期间正确渲染变格格子。获得S级角色后 is_variant 会被重置。
+        result["was_variant"] = self.state.is_variant
 
         # [V0.3-已注释] 终极调试-total_rolls+1日志（需要时可取消）
         print(f"[终极调试-total_rolls+1] [{_time.time():.3f}] total_rolls={self.state.total_rolls}")
@@ -1172,11 +1174,16 @@ class GameEngine:
         else:
             pass  # print(f"[调试-保底] 正常增加s_pity (当前s_pity={self.state.s_pity_counter})")
 
+        # [V0.5.5修复] 本次投掷未获得S级角色，且保底计数达到变格阈值时，
+        # 在结算后启用变格状态，供下一次投掷使用。
+        if not has_s_in_rewards and self.state.s_pity_counter >= PITY_CONFIG["s_pity"]["variant_threshold"]:
+            self.state.is_variant = True
+
         # [V0.3-已注释] increment_s_pity后调试日志（需要时可取消）
         # print(f"[调试-保底] increment_s_pity后: total_rolls={self.state.total_rolls}, s_pity_counter={self.state.s_pity_counter}, event={pity_event}")
 
         has_s_in_rewards = any(r.get("type") == "s_character" for r in rewards)
-        if pity_event in ("variant", "hard_pity") and not has_s_in_rewards:
+        if pity_event == "hard_pity" and not has_s_in_rewards:
             # [V0.3-已注释] 硬保底调试日志（需要时可取消）
             # print(f"[硬保底调试] 触发{pity_event}! 执行前: s_pity={self.state.s_pity_counter}, 已有S级={has_s_in_rewards}")
 

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-限定棋盘（浔）完整配置 V1.0
+限定棋盘（伊洛伊）完整配置 V1.0
 ==========================
 
-棋盘ID: limited_xun
-显示名称: 限定棋盘（浔）
+棋盘ID: limited_iroi
+显示名称: 限定棋盘（伊洛伊）
 棋盘类型: 限定棋盘（limited）
-S级角色: 浔
+S级角色: 伊洛伊
 
 配置内容：
 - S级/A级角色池
@@ -17,15 +17,15 @@ S级角色: 浔
 - 坐标布局数据
 
 版本历史：
-- V1.0: 从board_data.py提取（V0.4.2重构）
+- V1.0: 基于浔棋盘复制，仅替换S级角色名
 """
 
 from typing import Dict, List, Tuple, Any, Optional
 from boards.base_board import BaseBoard
 
 
-class LimitedXunBoard(BaseBoard):
-    """限定棋盘（浔）"""
+class LimitedIroiBoard(BaseBoard):
+    """限定棋盘（伊洛伊）"""
 
     # ============================================================
     # 必须实现的属性
@@ -33,11 +33,11 @@ class LimitedXunBoard(BaseBoard):
 
     @property
     def board_id(self) -> str:
-        return "limited_xun"
+        return "limited_iroi"
 
     @property
     def display_name(self) -> str:
-        return "限定棋盘（浔）"
+        return "限定棋盘（伊洛伊）"
 
     @property
     def board_type(self) -> str:
@@ -49,14 +49,14 @@ class LimitedXunBoard(BaseBoard):
 
     def get_s_pool(self) -> list:
         """
-        S级角色池 - 浔（单角色限定）
+        S级角色池 - 伊洛伊（单角色限定）
 
         概率说明：
         - 综合概率：1.87%（来自规则模板s_rate）
         - 变格后概率：19.59%（来自规则模板s_base_rate_variant）
         - 硬保底：90次必得S级
         """
-        return [{"name": "浔", "rate": 0.0187, "limited": True}]
+        return [{"name": "伊洛伊", "rate": 0.0187, "limited": True}]
 
     def get_a_pool(self) -> list:
         """
@@ -96,14 +96,14 @@ class LimitedXunBoard(BaseBoard):
         - 第37格 → 哈尼娅（A级）
 
         分支1（1个格子）:
-        - B1-0 → 浔（S级）
+        - B1-0 → 伊洛伊（S级）
         """
         return {
             1: "海月",
             10: "翳",
             29: "哈尼娅",
             37: "哈尼娅",
-            "B1-0": "浔",
+            "B1-0": "伊洛伊",
         }
 
     # ============================================================
@@ -112,11 +112,11 @@ class LimitedXunBoard(BaseBoard):
 
     def get_skin_character(self) -> Optional[str]:
         """皮肤专属角色名"""
-        return "浔"
+        return "伊洛伊"
 
     def get_skin_system(self) -> Dict[str, Any]:
         """
-        皮肤系统配置（浔专属）
+        皮肤系统配置（伊洛伊专属）
 
         三种皮肤类型：
         1. 今日穿搭（粉色）- 200次领取，重复+16金
@@ -167,29 +167,17 @@ class LimitedXunBoard(BaseBoard):
 
     def get_variant_transforms(self) -> Dict[int, Dict[str, str]]:
         """
-        变格变换配置（V0.4.3全面修复）
-
-        [修复内容] 基于CSV全面对比，删除16个错误变格配置
-        - 之前: 37个配置（23学徒+14勇者）
-        - 现在: 17个配置（5学徒+12勇者）
-        [V0.4.4修复] 移除35号错误变格（CSV确认为普通学徒宝箱）
+        变格变换配置（与浔相同）
 
         变格规则：
         1. 学徒宝箱变（5个）→ 勇者宝箱(50%概率S级)
            格子: 2, 14, 26, 38, 50
-           注：35号不是变格（CSV确认为普通学徒宝箱）
         2. 勇者宝箱变（12个）→ 必定获得S级角色(100%)
            主路径: 6, 12, 18, 24, 30, 36, 42, 48, 54 (9个)
            分支B1: B1-2, B1-4, B1-6, B1-8 (4个)
-           注：CSV显示"勇者宝箱变——分支1"待进一步验证
-
-        数据来源：限定棋盘浔地图手动统计.csv / board_data.py VARIANT_TRANSFORMS
         """
         return {
             # ===== 学徒宝箱变（5个）=====
-            # [V0.4.3全面修复] [V0.4.4修复] 只保留CSV中明确带"变"字的格子
-            # 数据来源：限定棋盘浔地图手动统计.csv
-            # 注意：35号不是变格（CSV确认为普通学徒宝箱）
             2:   {"normal": "apprentice_chest", "variant": "brave_chest", "variant_name": "学徒宝箱变"},
             14:  {"normal": "apprentice_chest", "variant": "brave_chest", "variant_name": "学徒宝箱变"},
             26:  {"normal": "apprentice_chest", "variant": "brave_chest", "variant_name": "学徒宝箱变"},
@@ -197,7 +185,6 @@ class LimitedXunBoard(BaseBoard):
             50:  {"normal": "apprentice_chest", "variant": "brave_chest", "variant_name": "学徒宝箱变"},
 
             # ===== 勇者宝箱变（12个）→ 必定获得S级角色(100%) =====
-            # 主路径9个（CSV确认）
             6:   {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
             12:  {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
             18:  {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
@@ -207,11 +194,11 @@ class LimitedXunBoard(BaseBoard):
             42:  {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
             48:  {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
             54:  {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
-            # 分支4个（CSV确认：分支3/5/7/9为勇者宝箱变）
-            "B1-2": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # CSV: 分支3=勇者宝箱变
-            "B1-4": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # CSV: 分支5=勇者宝箱变
-            "B1-6": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # CSV: 分支7=勇者宝箱变
-            "B1-8": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},  # CSV: 分支9=勇者宝箱变
+            # 分支4个
+            "B1-2": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B1-4": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B1-6": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
+            "B1-8": {"normal": "brave_chest", "variant": "companion_s", "variant_name": "勇者宝箱变"},
 
             # ===== 分支2勇者宝箱变（4个）→ 必定获得S级角色(100%) =====
             # [V0.5.5修复] CSV中分支1/5/8/9明确为勇者宝箱变，分支7不变
@@ -227,16 +214,15 @@ class LimitedXunBoard(BaseBoard):
 
     def generate_layout(self) -> Tuple[List[Tuple[int, int]], List[str], List[str], Dict]:
         """
-        生成浔棋盘布局坐标
+        生成伊洛伊棋盘布局坐标
 
-        [V0.4.2修复] 坐标数据与 board_data.py 的 get_limited_board_layout() 完全一致
-        数据来源：限定棋盘浔地图手动统计.csv
+        数据来源：限定棋盘伊洛伊地图手动统计.csv
         布局结构：蛇形路径 + 2个分支（B1、B2）
+        坐标系统与浔完全相同（伊洛伊与浔共享同一套地图布局）
 
         返回:
             (cell_positions, cell_types, cell_names, branch_entries)
         """
-        # [V0.4.2核心修复] 使用与board_data.py一致的坐标系统
         # 主路径：55格（索引0-54），起点在(5,10)，顺时针蛇形
         cell_positions = [
             # ===== 主路径（55格）：0-54 =====
@@ -307,7 +293,7 @@ class LimitedXunBoard(BaseBoard):
 
             # ===== 分支1（9格）：B1-0 ~ B1-8（索引55-63）=====
             # S级角色区：从(6,21)入口向右→下→左
-            (6, 21),   # B1-0 于此同行（浔）[S级角色] 入口
+            (6, 21),   # B1-0 于此同行（伊洛伊）[S级角色] 入口
             (6, 22),   # B1-1 改装时刻·涂装
             (6, 23),   # B1-2 勇者宝箱
             (6, 24),   # B1-3 学徒宝箱
@@ -385,12 +371,12 @@ class LimitedXunBoard(BaseBoard):
             "roll_again",               # 49 再来一次+沉眠池
             "apprentice_chest",         # 50 学徒宝箱变
             "arcade_blind",             # 51 弧光盲盒
-            "mist_box",                 # 52 迭棋盒（30个白色棋子）
+            "mist_box",                 # 52 迷迭棋盒（30个白色棋子）
             "apprentice_chest",         # 53 学徒宝箱
             "brave_chest",              # 54 勇者宝箱变 [终点]
 
             # ===== 分支1（9格）：B1-0 ~ B1-8 =====
-            "companion",                # B1-0 于此同行（浔）[S级角色]
+            "companion",                # B1-0 于此同行（伊洛伊）[S级角色]
             "vehicle_paint",            # B1-1 改装时刻·涂装
             "brave_chest",              # B1-2 勇者宝箱
             "apprentice_chest",         # B1-3 学徒宝箱
@@ -472,7 +458,7 @@ class LimitedXunBoard(BaseBoard):
             "勇者宝箱变",                # 54 [终点]
 
             # ===== 分支1（9格）：B1-0 ~ B1-8 =====
-            "于此同行（浔）",            # B1-0 [S级角色]
+            "于此同行（伊洛伊）",        # B1-0 [S级角色]
             "改装时刻·涂装",            # B1-1
             "勇者宝箱",                  # B1-2
             "学徒宝箱",                  # B1-3
@@ -496,37 +482,34 @@ class LimitedXunBoard(BaseBoard):
 
         branch_entries = {
             "B1": {
-                # [V0.4.2核心修复] 分支1入口=16号格子(6,19)学徒宝箱，出口=18号格子(8,19)勇者宝箱
+                # 分支1入口=16号格子(6,19)学徒宝箱，出口=18号格子(8,19)勇者宝箱
                 "start_main_idx": 16,
                 "branch_cells": [
-                    # [V0.4.2修复] 分支1共9格（与CSV序号一致：于此同行浔→改装时刻→勇者宝箱→学徒→勇者→学徒→勇者→学徒→勇者）
-                    ("companion", "于此同行（浔）"),   # B1-0 入口(S级角色)
-                    ("glider_skin", "改装时刻·涂装"),  # B1-1
-                    ("brave_chest", "勇者宝箱"),        # B1-2
-                    ("apprentice_chest", "学徒宝箱"),  # B1-3
-                    ("brave_chest", "勇者宝箱"),        # B1-4
-                    ("apprentice_chest", "学徒宝箱"),  # B1-5
-                    ("brave_chest", "勇者宝箱"),        # B1-6
-                    ("apprentice_chest", "学徒宝箱"),  # B1-7
-                    ("brave_chest", "勇者宝箱"),        # B1-8 出口
+                    ("companion", "于此同行（伊洛伊）"),   # B1-0 入口(S级角色)
+                    ("glider_skin", "改装时刻·涂装"),    # B1-1
+                    ("brave_chest", "勇者宝箱"),          # B1-2
+                    ("apprentice_chest", "学徒宝箱"),    # B1-3
+                    ("brave_chest", "勇者宝箱"),          # B1-4
+                    ("apprentice_chest", "学徒宝箱"),    # B1-5
+                    ("brave_chest", "勇者宝箱"),          # B1-6
+                    ("apprentice_chest", "学徒宝箱"),    # B1-7
+                    ("brave_chest", "勇者宝箱"),          # B1-8 出口
                 ],
                 "rejoin_main_idx": 18,
             },
             "B2": {
-                # [V0.4.2核心修复] 分支2入口=43号格子(4,4)学徒宝箱，出口=45号格子(2,4)迷迭棋盒
-                # [重要] CSV确认：43号是分支2入口（多重惊喜/今日穿搭区域）
+                # 分支2入口=43号格子(4,4)学徒宝箱，出口=45号格子(2,4)迷迭棋盒
                 "start_main_idx": 43,
                 "branch_cells": [
-                    # [V0.4.2修复] 分支2共9格（与CSV序号一致：多重惊喜→今日穿搭→勇者变→学徒→勇者→学徒→勇者→学徒→勇者）
-                    ("multi_surprise", "多重惊喜"),    # B2-0 入口
-                    ("glider_skin", "今日穿搭"),       # B2-1
-                    ("brave_chest", "勇者宝箱变"),     # B2-2
-                    ("apprentice_chest", "学徒宝箱"),  # B2-3
-                    ("brave_chest", "勇者宝箱"),        # B2-4
-                    ("apprentice_chest", "学徒宝箱"),  # B2-5
-                    ("brave_chest", "勇者宝箱"),        # B2-6
-                    ("apprentice_chest", "学徒宝箱"),  # B2-7
-                    ("brave_chest", "勇者宝箱"),        # B2-8 出口
+                    ("multi_surprise", "多重惊喜"),      # B2-0 入口
+                    ("glider_skin", "今日穿搭"),         # B2-1
+                    ("brave_chest", "勇者宝箱变"),       # B2-2
+                    ("apprentice_chest", "学徒宝箱"),    # B2-3
+                    ("brave_chest", "勇者宝箱"),          # B2-4
+                    ("apprentice_chest", "学徒宝箱"),    # B2-5
+                    ("brave_chest", "勇者宝箱"),          # B2-6
+                    ("apprentice_chest", "学徒宝箱"),    # B2-7
+                    ("brave_chest", "勇者宝箱"),          # B2-8 出口
                 ],
                 "rejoin_main_idx": 45,
             }

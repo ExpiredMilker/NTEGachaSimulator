@@ -3,7 +3,7 @@
 """
 抽卡模拟器主程序 - GUI界面（Tkinter）
 包含动画棋盘、骰子滚动、棋子移动、落格高亮、获得弹窗、皮肤系统
-版本: v1.0.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
+版本: v1.1.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
 """
 
 import tkinter as tk
@@ -1522,7 +1522,12 @@ class AnimatedBoardCanvas:
                 num_text = f"{idx}(终)"  # 循环结束点
                 num_color = "#F44336"  # 红色标记终点
             else:
-                num_text = str(idx)
+                # [V0.5.5修复] 分支格子显示本地编号（B1-0 ~ B1-8、B2-0 ~ B2-8），
+                # 主路径仍显示数字索引，避免分支2在变格/常态下都显示成全局序号。
+                if hasattr(self, 'cell_numbers') and idx < len(self.cell_numbers):
+                    num_text = str(self.cell_numbers[idx])
+                else:
+                    num_text = str(idx)
                 num_color = "#666"
 
             num_font = max(5, cs // 5)
@@ -2132,10 +2137,18 @@ class RechargeDialog(tk.Toplevel):
         def do_recharge(pack):
             rmb = pack["rmb_price"]
             stones = pack["total_stones"]
+            # [V0.5.4修复] 充值前先把UI输入框中的骰子/环石数值同步到DiceManager，
+            # 避免玩家输入后未触发同步就直接充值，导致刷新时把输入框清零。
+            app._sync_dice_inputs_to_manager(dm)
+            print(f"[充值调试-前] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone} "
+                  f"无限红={dm.infinite_red} 无限蓝={dm.infinite_blue}")
             if dm.recharge(rmb, stones):
+                print(f"[充值调试-recharge后] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone}")
                 app.total_rmb_var.set(f"{dm.total_recharged_rmb:.2f}")
                 app.ring_stone_var.set(str(dm.ring_stone))
+                print(f"[充值调试-刷新前] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone}")
                 app._refresh_all()
+                print(f"[充值调试-刷新后] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone}")
                 messagebox.showinfo("充值成功",
                     f"支付 {rmb:.0f} 元\n获得 {stones} 环石\n当前环石: {dm.ring_stone}", parent=self)
                 self.destroy()
@@ -2262,7 +2275,7 @@ class GachaSimulator:
         self.engine = GameEngine("limited_xun")
         print(f"[main.__init__] 初始引擎: gacha.board_type={self.engine.gacha.board_type}, gacha.board_id={self.engine.gacha.board_id}")
         self.root = tk.Tk()
-        self.root.title("异环抽卡模拟器 v1.0.0")
+        self.root.title("异环抽卡模拟器 v1.1.0")
         self.root.geometry("1100x800")
         self.root.resizable(True, True)
 
@@ -2411,6 +2424,9 @@ class GachaSimulator:
                                          width=9, font=("Microsoft YaHei", 9),
                                          validate="key", validatecommand=vcmd)
         self.red_dice_entry.pack(side=tk.LEFT, padx=2)
+        # [V0.5.4修复] 输入框失去焦点或回车时自动同步到DiceManager，避免未同步导致刷新清零
+        self.red_dice_entry.bind("<FocusOut>", self._on_dice_entry_commit)
+        self.red_dice_entry.bind("<Return>", self._on_dice_entry_commit)
         self.red_inf_var = tk.BooleanVar(value=True)
         tk.Checkbutton(row0, text="无限", variable=self.red_inf_var,
                         font=("Microsoft YaHei", 8),
@@ -2425,6 +2441,9 @@ class GachaSimulator:
                                           width=9, font=("Microsoft YaHei", 9),
                                           validate="key", validatecommand=vcmd)
         self.blue_dice_entry.pack(side=tk.LEFT, padx=2)
+        # [V0.5.4修复] 输入框失去焦点或回车时自动同步到DiceManager，避免未同步导致刷新清零
+        self.blue_dice_entry.bind("<FocusOut>", self._on_dice_entry_commit)
+        self.blue_dice_entry.bind("<Return>", self._on_dice_entry_commit)
         self.blue_inf_var = tk.BooleanVar(value=True)
         tk.Checkbutton(row1, text="无限",
                         variable=self.blue_inf_var,
@@ -2440,6 +2459,9 @@ class GachaSimulator:
                                            width=9, font=("Microsoft YaHei", 9),
                                            validate="key", validatecommand=vcmd)
         self.ring_stone_entry.pack(side=tk.LEFT, padx=2)
+        # [V0.5.4修复] 输入框失去焦点或回车时自动同步到DiceManager，避免未同步导致刷新清零
+        self.ring_stone_entry.bind("<FocusOut>", self._on_dice_entry_commit)
+        self.ring_stone_entry.bind("<Return>", self._on_dice_entry_commit)
         tk.Label(row2, text=" (160/骰)",
                   font=("Microsoft YaHei", 7), fg="#999").pack(side=tk.LEFT)
 
@@ -2938,6 +2960,14 @@ class GachaSimulator:
             # print(f"[switch_board] 切换后: gacha.board_type={self.engine.gacha.board_type}, board_id={new_board_id}")
             self._refresh_all()
             self.status_var.set(f"已切换到: {board_info['name']}")
+        else:
+            # [V0.5.4修复] 用户取消切换时，恢复下拉框和描述到当前实际棋盘
+            # 避免界面显示新棋盘但底层仍是旧棋盘，导致视觉/逻辑不一致
+            current_board_id = getattr(self.board_canvas, 'current_board_id', 'limited_xun')
+            current_display = self._board_id_to_display.get(current_board_id)
+            if current_display:
+                self.board_var.set(current_display)
+            self.board_desc_var.set(self._get_board_description(current_board_id))
 
     def _validate_number_input(self, new_value):
         """[V0.4.1新增] 验证输入是否为纯数字（允许空字符串）"""
@@ -2945,10 +2975,18 @@ class GachaSimulator:
             return True  # 允许清空
         return new_value.isdigit()  # 只允许0-9
 
+    def _on_dice_entry_commit(self, event=None):
+        """[V0.5.4新增] 骰子/环石输入框失去焦点或按回车时，自动同步到DiceManager"""
+        self._sync_dice_inputs_to_manager()
+        self._refresh_all()
+
     def _sync_dice_inputs_to_manager(self, dm=None):
         """[V0.5.2新增] 将UI输入框中的骰子/环石数值同步到DiceManager"""
         if dm is None:
             dm = self.engine.state.dice_manager
+
+        print(f"[_sync_dice_inputs_to_manager-入口] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone} "
+              f"red_var='{self.red_dice_var.get()}' blue_var='{self.blue_dice_var.get()}' ring_var='{self.ring_stone_var.get()}'")
 
         is_inf = self.red_inf_var.get()
         dm.infinite_red = is_inf
@@ -2956,9 +2994,15 @@ class GachaSimulator:
             self.red_dice_entry.config(state=tk.DISABLED)
         else:
             self.red_dice_entry.config(state=tk.NORMAL)
+
+        # [V0.5.3修复] 始终同步输入框数值到DiceManager，仅在空值时用DiceManager回填。
+        # 无限模式只控制是否扣减，不应导致玩家输入的骰子数量丢失。
+        raw = self.red_dice_var.get().strip()
+        if raw == "":
+            self.red_dice_var.set(str(dm.red_dice))
+        else:
             try:
-                val = int(self.red_dice_var.get() or "0")
-                dm.red_dice = max(0, val)
+                dm.red_dice = max(0, int(raw))
             except ValueError:
                 dm.red_dice = 0
 
@@ -2968,19 +3012,29 @@ class GachaSimulator:
             self.blue_dice_entry.config(state=tk.DISABLED)
         else:
             self.blue_dice_entry.config(state=tk.NORMAL)
+
+        # [V0.5.3修复] 蓝骰与红骰保持一致：无限模式不扣减，但保留输入数量
+        raw = self.blue_dice_var.get().strip()
+        if raw == "":
+            self.blue_dice_var.set(str(dm.blue_dice))
+        else:
             try:
-                val = int(self.blue_dice_var.get() or "0")
-                dm.blue_dice = max(0, val)
+                dm.blue_dice = max(0, int(raw))
             except ValueError:
                 dm.blue_dice = 0
 
         # [V0.5新增] 环石输入同步（关闭无限模式，采用输入值）
         dm.infinite_ring = False
-        try:
-            rv = int(self.ring_stone_var.get() or "0")
-            dm.ring_stone = max(0, rv)
-        except ValueError:
-            dm.ring_stone = 0
+        raw = self.ring_stone_var.get().strip()
+        if raw == "":
+            self.ring_stone_var.set(str(dm.ring_stone))
+        else:
+            try:
+                dm.ring_stone = max(0, int(raw))
+            except ValueError:
+                dm.ring_stone = 0
+
+        print(f"[_sync_dice_inputs_to_manager-出口] 红={dm.red_dice} 蓝={dm.blue_dice} 环石={dm.ring_stone}")
 
     def _on_dice_setting_change(self):
         self._sync_dice_inputs_to_manager()
@@ -3247,6 +3301,16 @@ class GachaSimulator:
         )
 
         ck = result["cell_type"]
+
+        # [V0.5.4修复] 抽奖逻辑可能已触发变格，动画开始前同步到棋盘画布
+        # 使用 result["was_variant"] 作为本次投掷的变格状态（获得S级后 engine.state.is_variant 会被重置）
+        if hasattr(self, 'board_canvas') and hasattr(self, 'engine'):
+            old_variant = getattr(self.board_canvas, 'is_variant', False)
+            new_variant = result.get("was_variant", getattr(self.engine.state, 'is_variant', False))
+            self.board_canvas.is_variant = new_variant
+            if old_variant != self.board_canvas.is_variant:
+                print(f"[变格-动画前同步] is_variant: {old_variant} -> {self.board_canvas.is_variant}, 触发棋盘重绘")
+                self.board_canvas._render_full_board()
 
         # [V0.4.3已移除] 单抽准备动画日志
 
@@ -3709,6 +3773,16 @@ class GachaSimulator:
                 )
 
                 ck = result["cell_type"]
+
+                # [V0.5.4修复] 十连抽每抽开始前同步变格状态到棋盘画布
+                # 使用 result["was_variant"] 保留本次投掷的真实变格状态（获得S级后 engine.state.is_variant 会被重置）
+                if hasattr(self, 'board_canvas') and hasattr(self, 'engine'):
+                    old_variant = getattr(self.board_canvas, 'is_variant', False)
+                    new_variant = result.get("was_variant", getattr(self.engine.state, 'is_variant', False))
+                    self.board_canvas.is_variant = new_variant
+                    if old_variant != self.board_canvas.is_variant:
+                        print(f"[变格-10连抽同步] is_variant: {old_variant} -> {self.board_canvas.is_variant}, 触发棋盘重绘")
+                        self.board_canvas._render_full_board()
 
                 def after_one():
                     try:
@@ -4600,6 +4674,8 @@ class GachaSimulator:
         pc = __import__("board_data").PITY_CONFIG["s_pity"]["hard_pity"]
         gc = __import__("board_data").PITY_CONFIG["gift_pity"]["interval"]
 
+        print(f"[_refresh_all-入口] 红={s.dice_manager.red_dice} 蓝={s.dice_manager.blue_dice} 环石={s.dice_manager.ring_stone}")
+
         self.lbl_total_rolls.config(text=f"掷骰: {s.total_rolls}")
         self.lbl_pity.config(text=f"S保底: {s.s_pity_counter}/{pc}")
         self.lbl_gift.config(text=f"赠礼: {s.gift_counter}/{gc}")
@@ -4613,12 +4689,14 @@ class GachaSimulator:
 
         dc = s.dice_manager.get_dice_count("red")
         if dc == float("inf"):
-            self.red_inf_var.set(True)
+            # [V0.5.4修复] 先回填数值再设置无限勾选，避免Checkbutton的command触发同步时读到旧值
+            self.red_dice_var.set(str(int(s.dice_manager.red_dice)))
             self.red_dice_entry.config(state=tk.DISABLED)
+            self.red_inf_var.set(True)
         else:
-            self.red_inf_var.set(False)
-            self.red_dice_entry.config(state=tk.NORMAL)
             self.red_dice_var.set(str(int(dc)))
+            self.red_dice_entry.config(state=tk.NORMAL)
+            self.red_inf_var.set(False)
 
         # [V0.5.2修复] 直接显示环石原值，get_dice_count("ring") 已换算为可用抽数
         self.ring_stone_var.set(str(int(s.dice_manager.ring_stone)))
@@ -4626,16 +4704,20 @@ class GachaSimulator:
         # [V0.3新增] 蓝色骰子显示同步
         bc = s.dice_manager.get_dice_count("blue")
         if bc == float("inf"):
-            self.blue_inf_var.set(True)
+            # [V0.5.4修复] 先回填数值再设置无限勾选，避免Checkbutton的command触发同步时读到旧值
+            self.blue_dice_var.set(str(int(s.dice_manager.blue_dice)))
             self.blue_dice_entry.config(state=tk.DISABLED)
+            self.blue_inf_var.set(True)
         else:
-            self.blue_inf_var.set(False)
-            self.blue_dice_entry.config(state=tk.NORMAL)
             self.blue_dice_var.set(str(int(bc)))
+            self.blue_dice_entry.config(state=tk.NORMAL)
+            self.blue_inf_var.set(False)
 
         # [V0.5] 更新累计充值金额显示
         if hasattr(self, 'total_rmb_var') and hasattr(s.dice_manager, 'total_recharged_rmb'):
             self.total_rmb_var.set(f"{s.dice_manager.total_recharged_rmb:.2f}")
+
+        print(f"[_refresh_all-出口] 红={s.dice_manager.red_dice} 蓝={s.dice_manager.blue_dice} 环石={s.dice_manager.ring_stone}")
 
         self.lbl_gold_chips.config(text=f"金棋: {s.gold_chips}")
         self.lbl_white_chips.config(text=f"白棋: {s.white_chips}")
