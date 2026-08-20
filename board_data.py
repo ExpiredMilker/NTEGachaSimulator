@@ -83,6 +83,8 @@ class CharIds:
     S_CAERUS = "caerus"       # 卡厄斯
     S_ZHENHONG = "zhenhong"   # 真红
     S_IROI = "iroi"           # 伊洛伊
+    S_NANALLY = "nanally"     # 娜娜莉
+    S_ZANKOU = "zankou"       # 残红
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -130,6 +132,16 @@ CHARACTER_DB = {
     },
     CharIds.S_IROI: {
         "name": "伊洛伊",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_NANALLY: {
+        "name": "娜娜莉",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_ZANKOU: {
+        "name": "残红",
         "rarity": "S",
         "type": "limited",
     },
@@ -463,7 +475,51 @@ BOARDS_REGISTRY = {
     # 新增棋盘步骤：1.添加角色 2.添加配置 3.实现布局函数 4.UI自动识别
 
     # ============================================================
-    # 限定棋盘0：浔（默认棋盘）
+    # 限定棋盘0：娜娜莉（默认棋盘，最早限定）
+    # 基于浔棋盘复制，仅替换S级角色名
+    # ============================================================
+    "limited_nanally": {
+        "display_name": "限定棋盘（娜娜莉）",
+        "board_type": "limited",              # 限定棋盘类型
+
+        # S级角色（使用ID引用）
+        "s_character_id": CharIds.S_NANALLY,
+
+        # 于此同行角色映射（主路径4格 + 分支1第1格）
+        # key: 格子编号（int或str），value: 角色ID
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
+            10: CharIds.A_YI,                 # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_NANALLY,        # 分支1第0格（S级角色）→ 娜娜莉
+        },
+
+        # A级角色池（使用ID列表）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局数据（从CSV提取）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射（当前扁平结构，未来可改为文件夹路径）
+        "files": {
+            "csv": "限定棋盘娜娜莉地图手动统计.csv",
+            "rules_txt": "限定棋盘娜娜莉规则说明.txt",
+            "details_txt": "限定棋盘娜娜莉详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘1：浔
     # ============================================================
     "limited_xun": {
         "display_name": "限定棋盘（浔）",
@@ -672,6 +728,49 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘伊洛伊地图手动统计.csv",
             "rules_txt": "限定棋盘伊洛伊规则说明.txt",
             "details_txt": "限定棋盘伊洛伊详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘6：残红（最新限定）
+    # 基于浔棋盘复制，仅替换S级角色名
+    # ============================================================
+    "limited_zankou": {
+        "display_name": "限定棋盘（残红）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_ZANKOU,
+
+        # 于此同行角色映射（复用浔的A级角色分配）
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
+            10: CharIds.A_YI,                 # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_ZANKOU,         # 分支1第0格（S级角色）→ 残红
+        },
+
+        # A级角色池（复用浔）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局（复用浔布局，仅替换S级角色名）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘残红地图手动统计.csv",
+            "rules_txt": "限定棋盘残红规则说明.txt",
+            "details_txt": "限定棋盘残红详情.txt",
         },
     },
 

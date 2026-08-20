@@ -3,7 +3,7 @@
 """
 抽卡模拟器主程序 - GUI界面（Tkinter）
 包含动画棋盘、骰子滚动、棋子移动、落格高亮、获得弹窗、皮肤系统
-版本: v1.1.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
+版本: v1.2.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
 """
 
 import tkinter as tk
@@ -179,7 +179,9 @@ class AnimatedBoardCanvas:
         if board_config:
             self._load_board_config(board_config)
         else:
-            self._generate_limited_board()
+            # [V1.3.0修复] 无外部配置时，使用引擎当前棋盘ID，不再硬编码浔
+            default_board_id = getattr(self.engine.gacha, 'board_id', 'limited_nanally')
+            self._generate_limited_board(default_board_id)
 
         self.piece_pos_idx = 0
         self.piece_ids = []
@@ -358,9 +360,9 @@ class AnimatedBoardCanvas:
             print(f"[V0.4.2-DEBUG] 成功加载棋盘插件: {board.display_name} (ID: {board.board_id})")
         except Exception as e:
             print(f"[错误] 无法从boards包加载棋盘 {board_id}: {e}")
-            print(f"[回退] 使用默认棋盘（浔）")
+            print(f"[回退] 使用默认棋盘（娜娜莉）")
             from boards import get_board as boards_get_board
-            board = boards_get_board("limited_xun")
+            board = boards_get_board("limited_nanally")
 
         # 设置基本信息
         self.board_name = board.display_name
@@ -1984,10 +1986,10 @@ class AnimatedBoardCanvas:
         """默认棋盘配置（当无法从board_data.py读取时使用）"""
         return [
             {
-                "id": "limited_xun",
-                "name": "限定棋盘(浔)",
+                "id": "limited_nanally",
+                "name": "限定棋盘（娜娜莉）",
                 "type": "limited",
-                "description": "限时角色浔专属棋盘，含S级角色和皮肤分支",
+                "description": "限时角色娜娜莉专属棋盘，含S级角色和皮肤分支",
             },
         ]
 
@@ -2272,10 +2274,10 @@ class GachaSimulator:
 
     def __init__(self):
         # [修复] 传递默认棋盘ID，确保初始奖励池正确
-        self.engine = GameEngine("limited_xun")
+        self.engine = GameEngine("limited_nanally")
         print(f"[main.__init__] 初始引擎: gacha.board_type={self.engine.gacha.board_type}, gacha.board_id={self.engine.gacha.board_id}")
         self.root = tk.Tk()
-        self.root.title("异环抽卡模拟器 v1.1.0")
+        self.root.title("异环抽卡模拟器 v1.2.0")
         self.root.geometry("1100x800")
         self.root.resizable(True, True)
 
@@ -2549,7 +2551,7 @@ class GachaSimulator:
 
         # [修复] 初始值应该使用显示文本，而不是board_id
         # 优先选择第一个可用的限定棋盘
-        default_board_id = "limited_xun"
+        default_board_id = "limited_nanally"
         if default_board_id in board_values:
             default_index = board_values.index(default_board_id)
         else:
@@ -2580,7 +2582,7 @@ class GachaSimulator:
         self.board_combo.bind("<<ComboboxSelected>>", self._on_board_combo_change)
 
         # 当前棋盘描述标签
-        self.board_desc_var = tk.StringVar(value=self._get_board_description("limited_xun"))
+        self.board_desc_var = tk.StringVar(value=self._get_board_description("limited_nanally"))
         desc_label = tk.Label(
             f,
             textvariable=self.board_desc_var,
@@ -2896,7 +2898,7 @@ class GachaSimulator:
                 )
                 
                 # 强制恢复到默认棋盘
-                default_display = self._board_id_to_display.get("limited_xun")
+                default_display = self._board_id_to_display.get("limited_nanally")
                 if default_display:
                     self.board_var.set(default_display)
                 
