@@ -487,24 +487,26 @@ BOARDS_REGISTRY = {
 
         # 于此同行角色映射（主路径4格 + 分支1第1格）
         # key: 格子编号（int或str），value: 角色ID
+        # [V1.2.1修复] 与CSV统计一致：1→阿德勒、10→埃德嘉、29/37→薄荷
         "companions_id_map": {
-            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
-            10: CharIds.A_YI,                 # 主路径第10格 → 翳
-            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
-            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            1: CharIds.A_ADELE,               # 主路径第1格 → 阿德勒
+            10: CharIds.A_AIDEJIA,            # 主路径第10格 → 埃德嘉
+            29: CharIds.A_BOHE,               # 主路径第29格 → 薄荷
+            37: CharIds.A_BOHE,               # 主路径第37格 → 薄荷
             "B1-0": CharIds.S_NANALLY,        # 分支1第0格（S级角色）→ 娜娜莉
         },
 
         # A级角色池（使用ID列表）
+        # [V1.2.1修复] 主池为薄荷/埃德嘉/阿德勒，赠礼池为翳/哈尼娅/海月
         "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
-            CharIds.A_HANIYA,
-            CharIds.A_YI,
-            CharIds.A_HAIYUE,
-        ],
-        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
             CharIds.A_BOHE,
             CharIds.A_AIDEJIA,
             CharIds.A_ADELE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_YI,
+            CharIds.A_HANIYA,
+            CharIds.A_HAIYUE,
         ],
 
         # 坐标布局数据（从CSV提取）
@@ -742,25 +744,27 @@ BOARDS_REGISTRY = {
         # S级角色
         "s_character_id": CharIds.S_ZANKOU,
 
-        # 于此同行角色映射（复用浔的A级角色分配）
+        # 于此同行角色映射
+        # [V1.2.1修复] 与CSV统计一致：1→阿德勒、10→埃德嘉、29/37→薄荷
         "companions_id_map": {
-            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
-            10: CharIds.A_YI,                 # 主路径第10格 → 翳
-            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
-            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            1: CharIds.A_ADELE,               # 主路径第1格 → 阿德勒
+            10: CharIds.A_AIDEJIA,            # 主路径第10格 → 埃德嘉
+            29: CharIds.A_BOHE,               # 主路径第29格 → 薄荷
+            37: CharIds.A_BOHE,               # 主路径第37格 → 薄荷
             "B1-0": CharIds.S_ZANKOU,         # 分支1第0格（S级角色）→ 残红
         },
 
-        # A级角色池（复用浔）
+        # A级角色池
+        # [V1.2.1修复] 主池为薄荷/埃德嘉/阿德勒，赠礼池为翳/哈尼娅/海月
         "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
-            CharIds.A_HANIYA,
-            CharIds.A_YI,
-            CharIds.A_HAIYUE,
-        ],
-        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
             CharIds.A_BOHE,
             CharIds.A_AIDEJIA,
             CharIds.A_ADELE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_YI,
+            CharIds.A_HANIYA,
+            CharIds.A_HAIYUE,
         ],
 
         # 坐标布局（复用浔布局，仅替换S级角色名）

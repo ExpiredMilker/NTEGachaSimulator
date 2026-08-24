@@ -3,7 +3,7 @@
 """
 抽卡模拟器主程序 - GUI界面（Tkinter）
 包含动画棋盘、骰子滚动、棋子移动、落格高亮、获得弹窗、皮肤系统
-版本: v1.2.0 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
+版本: v1.2.1 - 全新渲染引擎 + 多棋盘架构 + 5档速度控制
 """
 
 import tkinter as tk
@@ -2277,7 +2277,7 @@ class GachaSimulator:
         self.engine = GameEngine("limited_nanally")
         print(f"[main.__init__] 初始引擎: gacha.board_type={self.engine.gacha.board_type}, gacha.board_id={self.engine.gacha.board_id}")
         self.root = tk.Tk()
-        self.root.title("异环抽卡模拟器 v1.2.0")
+        self.root.title("异环抽卡模拟器 v1.2.1")
         self.root.geometry("1100x800")
         self.root.resizable(True, True)
 
