@@ -85,6 +85,7 @@ class CharIds:
     S_IROI = "iroi"           # 伊洛伊
     S_NANALLY = "nanally"     # 娜娜莉
     S_ZANKOU = "zankou"       # 残红
+    S_LINKO = "linko"         # 灵可（Linko）
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -142,6 +143,11 @@ CHARACTER_DB = {
     },
     CharIds.S_ZANKOU: {
         "name": "残红",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_LINKO: {
+        "name": "灵可",
         "rarity": "S",
         "type": "limited",
     },
@@ -775,6 +781,49 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘残红地图手动统计.csv",
             "rules_txt": "限定棋盘残红规则说明.txt",
             "details_txt": "限定棋盘残红详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘7：灵可（最新限定）
+    # 基于浔棋盘复制，仅替换S级角色名（CSV逐格对比确认）
+    # ============================================================
+    "limited_linko": {
+        "display_name": "限定棋盘（灵可）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_LINKO,
+
+        # 于此同行角色映射（与浔相同，仅B1-0为灵可）
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,              # 主路径第1格 → 海月
+            10: CharIds.A_YI,                 # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,             # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,             # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_LINKO,         # 分支1第0格（S级角色）→ 灵可
+        },
+
+        # A级角色池（与浔相同）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局（复用浔布局，仅替换S级角色名）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘灵可地图手动统计.csv",
+            "rules_txt": "限定棋盘灵可规则说明.txt",
+            "details_txt": "限定棋盘灵可详情.txt",
         },
     },
 
