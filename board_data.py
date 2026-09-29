@@ -86,6 +86,7 @@ class CharIds:
     S_NANALLY = "nanally"     # 娜娜莉
     S_ZANKOU = "zankou"       # 残红
     S_LINKO = "linko"         # 灵可（Linko）
+    S_BLACKBIRD = "blackbird" # 黑羽（Blackbird，1.4版本上半）
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -148,6 +149,11 @@ CHARACTER_DB = {
     },
     CharIds.S_LINKO: {
         "name": "灵可",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_BLACKBIRD: {
+        "name": "黑羽",
         "rarity": "S",
         "type": "limited",
     },
@@ -824,6 +830,51 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘灵可地图手动统计.csv",
             "rules_txt": "限定棋盘灵可规则说明.txt",
             "details_txt": "限定棋盘灵可详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘8：黑羽（Blackbird，1.4版本上半）
+    # 布局与灵可棋盘一致（CSV逐格对比确认），同行角色与A级池不同
+    # ============================================================
+    "limited_blackbird": {
+        "display_name": "限定棋盘（黑羽）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_BLACKBIRD,
+
+        # 于此同行角色映射（数据来源：限定棋盘黑羽地图手动统计.csv）
+        "companions_id_map": {
+            1: CharIds.A_ADELE,               # 主路径第1格 → 阿德勒
+            10: CharIds.A_AIDEJIA,            # 主路径第10格 → 埃德嘉
+            17: CharIds.A_AIDEJIA,            # 主路径第17格 → 埃德嘉
+            29: CharIds.A_BOHE,               # 主路径第29格 → 薄荷
+            37: CharIds.A_BOHE,               # 主路径第37格 → 薄荷
+            44: CharIds.A_ADELE,              # 主路径第44格 → 阿德勒
+            "B1-0": CharIds.S_BLACKBIRD,      # 分支1第0格（S级角色）→ 黑羽
+        },
+
+        # A级角色池（与灵可池互换：薄荷/埃德嘉/阿德勒为主池）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_YI,
+            CharIds.A_HANIYA,
+            CharIds.A_HAIYUE,
+        ],
+
+        # 坐标布局（复用通用限定棋盘布局函数，实际布局由boards插件提供）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘黑羽地图手动统计.csv",
+            "rules_txt": "限定棋盘黑羽规则说明.txt",
+            "details_txt": "限定棋盘黑羽详情.txt",
         },
     },
 
