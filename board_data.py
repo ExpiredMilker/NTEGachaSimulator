@@ -87,6 +87,7 @@ class CharIds:
     S_ZANKOU = "zankou"       # 残红
     S_LINKO = "linko"         # 灵可（Linko）
     S_BLACKBIRD = "blackbird" # 黑羽（Blackbird，1.4版本上半）
+    S_AKANE_RIN = "akane_rin" # 明音凛（Akane Rin，1.4版本下半）
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -154,6 +155,11 @@ CHARACTER_DB = {
     },
     CharIds.S_BLACKBIRD: {
         "name": "黑羽",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_AKANE_RIN: {
+        "name": "明音凛",
         "rarity": "S",
         "type": "limited",
     },
@@ -875,6 +881,49 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘黑羽地图手动统计.csv",
             "rules_txt": "限定棋盘黑羽规则说明.txt",
             "details_txt": "限定棋盘黑羽详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘9：明音凛（Akane Rin，1.4版本下半）
+    # 布局与灵可棋盘一致（CSV逐行对比仅标题与B1-0角色不同），A级池与灵可相同
+    # ============================================================
+    "limited_akane_rin": {
+        "display_name": "限定棋盘（明音凛）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_AKANE_RIN,
+
+        # 于此同行角色映射（与灵可相同，仅B1-0为明音凛）
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,             # 主路径第1格 → 海月
+            10: CharIds.A_YI,                # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,            # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,            # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_AKANE_RIN,     # 分支1第0格（S级角色）→ 明音凛
+        },
+
+        # A级角色池（与灵可相同）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局（复用通用限定棋盘布局函数，实际布局由boards插件提供）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘明音凛地图手动统计.csv",
+            "rules_txt": "限定棋盘明音凛规则说明.txt",
+            "details_txt": "限定棋盘明音凛详情.txt",
         },
     },
 
