@@ -88,6 +88,7 @@ class CharIds:
     S_LINKO = "linko"         # 灵可（Linko）
     S_BLACKBIRD = "blackbird" # 黑羽（Blackbird，1.4版本上半）
     S_AKANE_RIN = "akane_rin" # 明音凛（Akane Rin，1.4版本下半）
+    S_ELYMS = "elyms"         # 曳尔沐（Elyms，1.5版本上半）
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -160,6 +161,11 @@ CHARACTER_DB = {
     },
     CharIds.S_AKANE_RIN: {
         "name": "明音凛",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_ELYMS: {
+        "name": "曳尔沐",
         "rarity": "S",
         "type": "limited",
     },
@@ -924,6 +930,51 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘明音凛地图手动统计.csv",
             "rules_txt": "限定棋盘明音凛规则说明.txt",
             "details_txt": "限定棋盘明音凛详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘10：曳尔沐（Elyms，1.5版本上半）
+    # 布局与黑羽（1.4版本上半）一致（73格），同行6格与A级主池同族
+    # ============================================================
+    "limited_elyms": {
+        "display_name": "限定棋盘（曳尔沐）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_ELYMS,
+
+        # 于此同行角色映射（数据来源：限定棋盘曳尔沐地图手动统计.csv）
+        "companions_id_map": {
+            1: CharIds.A_ADELE,               # 主路径第1格 → 阿德勒
+            10: CharIds.A_AIDEJIA,            # 主路径第10格 → 埃德嘉
+            17: CharIds.A_AIDEJIA,            # 主路径第17格 → 埃德嘉
+            29: CharIds.A_BOHE,               # 主路径第29格 → 薄荷
+            37: CharIds.A_BOHE,               # 主路径第37格 → 薄荷
+            44: CharIds.A_ADELE,              # 主路径第44格 → 阿德勒
+            "B1-0": CharIds.S_ELYMS,          # 分支1第0格（S级角色）→ 曳尔沐
+        },
+
+        # A级角色池（与黑羽相同：薄荷/埃德嘉/阿德勒为主池）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_YI,
+            CharIds.A_HANIYA,
+            CharIds.A_HAIYUE,
+        ],
+
+        # 坐标布局（复用通用限定棋盘布局函数，实际布局由boards插件提供）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘曳尔沐地图手动统计.csv",
+            "rules_txt": "限定棋盘曳尔沐规则说明.txt",
+            "details_txt": "限定棋盘曳尔沐详情.txt",
         },
     },
 
