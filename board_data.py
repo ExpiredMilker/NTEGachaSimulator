@@ -89,6 +89,7 @@ class CharIds:
     S_BLACKBIRD = "blackbird" # 黑羽（Blackbird，1.4版本上半）
     S_AKANE_RIN = "akane_rin" # 明音凛（Akane Rin，1.4版本下半）
     S_ELYMS = "elyms"         # 曳尔沐（Elyms，1.5版本上半）
+    S_EXE = "exe"             # Exe（Exe，1.5版本下半）
 
     # S级常驻角色（万年不变，硬编码）
     S_ZAOWU = "zaowu"           # 早雾
@@ -166,6 +167,11 @@ CHARACTER_DB = {
     },
     CharIds.S_ELYMS: {
         "name": "曳尔沐",
+        "rarity": "S",
+        "type": "limited",
+    },
+    CharIds.S_EXE: {
+        "name": "Exe",
         "rarity": "S",
         "type": "limited",
     },
@@ -975,6 +981,50 @@ BOARDS_REGISTRY = {
             "csv": "限定棋盘曳尔沐地图手动统计.csv",
             "rules_txt": "限定棋盘曳尔沐规则说明.txt",
             "details_txt": "限定棋盘曳尔沐详情.txt",
+        },
+    },
+
+    # ============================================================
+    # 限定棋盘11：Exe（Exe，1.5版本下半）
+    # 布局与明音凛（1.4版本下半）一致（73格），仅B1-0的S级角色替换为Exe
+    # A级池与同行映射沿写明音凛（主池哈尼娅/翳/海月，赠礼池薄荷/埃德嘉/阿德勒）
+    # ============================================================
+    "limited_exe": {
+        "display_name": "限定棋盘（Exe）",
+        "board_type": "limited",
+
+        # S级角色
+        "s_character_id": CharIds.S_EXE,
+
+        # 于此同行角色映射（与明音凛相同，仅B1-0为Exe）
+        "companions_id_map": {
+            1: CharIds.A_HAIYUE,             # 主路径第1格 → 海月
+            10: CharIds.A_YI,                # 主路径第10格 → 翳
+            29: CharIds.A_HANIYA,            # 主路径第29格 → 哈尼娅
+            37: CharIds.A_HANIYA,            # 主路径第37格 → 哈尼娅
+            "B1-0": CharIds.S_EXE,           # 分支1第0格（S级角色）→ Exe
+        },
+
+        # A级角色池（与明音凛相同：哈尼娅/翳/海月为主池）
+        "a_pool_main_ids": [                  # 主池（高概率 ~3.5% each）
+            CharIds.A_HANIYA,
+            CharIds.A_YI,
+            CharIds.A_HAIYUE,
+        ],
+        "a_pool_gift_only_ids": [             # 仅赠礼池（低概率 ~0.33% each）
+            CharIds.A_BOHE,
+            CharIds.A_AIDEJIA,
+            CharIds.A_ADELE,
+        ],
+
+        # 坐标布局（复用通用限定棋盘布局函数，实际布局由boards插件提供）
+        "layout_func": "get_limited_board_layout",
+
+        # 文件映射
+        "files": {
+            "csv": "限定棋盘Exe地图手动统计.csv",
+            "rules_txt": "限定棋盘Exe规则说明.txt",
+            "details_txt": "限定棋盘Exe详情.txt",
         },
     },
 
